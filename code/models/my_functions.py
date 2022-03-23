@@ -95,10 +95,16 @@ class random_function(abstract_function):
 class difference_function(abstract_function):
     def __init__(self, in_dim, out_dim, layer, device, params):
         super().__init__(in_dim, out_dim, layer, device)
+        if params["act"] is None:
+            self.activation_function = (lambda x: x)
+        elif params["act"] == "linear-BN":
+            self.activation_function = (lambda x: batch_normalization(x))
+        else:
+            raise NotImplementedError()
 
     def forward(self, input, original=None):
         with torch.no_grad():
             upper = self.layer.forward(original, update=False)
             rec = self.layer.backward_function_1.forward(upper)
             difference = original - rec
-        return input + difference
+        return self.activation_function(input + difference)

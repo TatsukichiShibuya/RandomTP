@@ -184,7 +184,7 @@ def set_params(kwargs):
         params["bf1"] = {"type": "random",
                          "init": kwargs[name["bf1"] + "_init"],
                          "act": kwargs[name["bf1"] + "_activation"]}
-        params["bf2"] = {"type": "difference", "init": None, "act": None}
+        params["bf2"] = {"type": "difference", "init": None, "act": "linear-BN"}
     elif kwargs["algorithm"] == "ID":
         params["ff1"] = {"type": "identity", "init": None, "act": None}
         params["ff2"] = {"type": "identity", "init": None, "act": None}
