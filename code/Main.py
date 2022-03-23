@@ -14,7 +14,7 @@ from torch import nn
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 BP_LIST = ["BP"]
-TP_LIST = ["ID"]
+TP_LIST = ["TP"]
 
 
 def get_args():
@@ -40,14 +40,24 @@ def get_args():
     parser.add_argument("--label_augmentation", action="store_true")
 
     # setting of tp_layer
-    parser.add_argument("forward_function_1", "-ff1", type=str, default="identity",
-                        choices=["identity", "parameterized"])
-    parser.add_argument("forward_function_2", "-ff2", type=str, default="identity",
-                        choices=["identity", "parameterized"])
-    parser.add_argument("backward_function_1", "-bf1", type=str, default="identity",
+    parser.add_argument("--forward_function_1", "-ff1", type=str, default="identity",
                         choices=["identity", "random", "parameterized"])
-    parser.add_argument("backward_function_2", "-bf2", type=str, default="identity",
+    parser.add_argument("--forward_function_2", "-ff2", type=str, default="identity",
+                        choices=["identity", "random", "parameterized"])
+    parser.add_argument("--backward_function_1", "-bf1", type=str, default="identity",
+                        choices=["identity", "random", "parameterized"])
+    parser.add_argument("--backward_function_2", "-bf2", type=str, default="identity",
                         choices=["identity", "random", "difference"])
+
+    # neccesary if {parameterized, random} was choosed
+    parser.add_argument("--forward_function_1_init", "-ff1_init", type=str, default="orthogonal",
+                        choices=["orthogonal", "gaussian", "uniform"])
+    parser.add_argument("--forward_function_2_init", "-ff2_init", type=str, default="orthogonal",
+                        choices=["orthogonal", "gaussian", "uniform"])
+    parser.add_argument("--backward_function_1_init", "-bf1_init", type=str, default="orthogonal",
+                        choices=["orthogonal", "gaussian", "uniform"])
+    parser.add_argument("--backward_function_2_init", "-bf2_init", type=str, default="orthogonal",
+                        choices=["orthogonal", "gaussian", "uniform"])
 
     # wandb
     parser.add_argument("--log", action="store_true")
@@ -106,8 +116,9 @@ def main(**kwargs):
         model.train(train_loader, valid_loader, kwargs["epochs"], kwargs["learning_rate"],
                     kwargs["log"])
     elif kwargs["algorithm"] in TP_LIST:
+        params = set_params(kwargs)
         model = tp_net(kwargs["depth"], kwargs["direct_depth"], kwargs["in_dim"],
-                       kwargs["hid_dim"], kwargs["out_dim"], loss_function, device)
+                       kwargs["hid_dim"], kwargs["out_dim"], loss_function, device, params=params)
         model.train(train_loader, valid_loader, kwargs["epochs"], kwargs["learning_rate"],
                     kwargs["learning_rate_backward"], kwargs["stepsize"], kwargs["log"])
 
@@ -116,6 +127,19 @@ def main(**kwargs):
     print(f"Test Loss      : {loss}")
     if acc is not None:
         print(f"Test Acc       : {acc}")
+
+
+def set_params(kwargs):
+    params = {}
+    long = ["forward_function_1", "forward_function_2",
+            "backward_function_1", "backward_function_2"]
+    short = ["ff1", "ff2", "bf1", "bf2"]
+    for l, s in zip(long, short):
+        if kwargs[l] in ["random", "parameterized"]:
+            params[s] = {"type": kwargs[l], "init": kwargs[l + "_init"]}
+        elif kwargs[l] in ["identity", "difference"]:
+            params[s] = {"type": kwargs[l]}
+    return params
 
 
 if __name__ == '__main__':

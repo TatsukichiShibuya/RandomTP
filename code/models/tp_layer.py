@@ -12,12 +12,12 @@ class tp_layer:
         self.device = device
 
         # set forward functions
-        self.forward_function_1 = identity_function(in_dim, in_dim,  self, self.device, params)
-        self.forward_function_2 = identity_function(in_dim, out_dim, self, self.device, params)
+        self.forward_function_1 = set_function(in_dim, in_dim, self, self.device, params["ff1"])
+        self.forward_function_2 = set_function(in_dim, out_dim, self, self.device, params["ff2"])
 
         # set backward functions
-        self.backward_function_1 = identity_function(out_dim, out_dim, self, self.device, params)
-        self.backward_function_2 = identity_function(out_dim, in_dim, self, self.device, params)
+        self.backward_function_1 = set_function(out_dim, out_dim, self, self.device, params["bf1"])
+        self.backward_function_2 = set_function(out_dim, in_dim, self, self.device, params["bf2"])
 
         # values
         self.input = None
@@ -58,3 +58,16 @@ class tp_layer:
         self.forward_function_2.zero_grad()
         self.backward_function_1.zero_grad()
         self.backward_function_2.zero_grad()
+
+
+def set_function(in_dim, out_dim, layer, device, params):
+    if params["type"] == "identity":
+        return identity_function(in_dim, out_dim, layer, device, params)
+    elif params["type"] == "random":
+        return random_function(in_dim, out_dim, layer, device, params)
+    elif params["type"] == "parameterized":
+        return parameterized_function(in_dim, out_dim, layer, device, params)
+    elif params["type"] == "difference":
+        return identity_function(in_dim, out_dim, layer, device, params)
+    else:
+        raise NotImplementedError()

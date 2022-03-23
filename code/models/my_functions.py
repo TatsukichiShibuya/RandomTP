@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 from abc import ABCMeta, abstractmethod
 
 
@@ -25,7 +26,7 @@ class abstract_function(metaclass=ABCMeta):
 class identity_function(abstract_function):
     def __init__(self, in_dim, out_dim, layer, device, params):
         super().__init__(in_dim, out_dim, layer, device)
-        self.weight = torch.eye(self.out_dim, self.in_dim, device=self.device)
+        self.weight = torch.eye(out_dim, in_dim, device=device)
 
     def forward(self, input, original, update):
         return input @ self.weight.T
@@ -42,27 +43,44 @@ class identity_function(abstract_function):
 class parameterized_function(abstract_function):
     def __init__(self, in_dim, out_dim, layer, device, params):
         super().__init__(in_dim, out_dim, layer, device)
-        self.weight = torch.eye(self.out_dim, self.in_dim, device=self.device)
+        self.weight = torch.empty(out_dim, in_dim, requires_grad=True, device=device)
+        if params["init"] == "uniform":
+            nn.init.uniform_(self.weight, -1e-3, 1e-3)
+        elif params["init"] == "gaussian":
+            nn.init.normal_(self.weight, 0, 1e-3)
+        elif params["init"] == "orthogonal":
+            nn.init.orthogonal_(self.weight)
+        else:
+            raise NotImplementedError()
+        self.activation_function = nn.Tanh()
 
     def forward(self, input, original, update):
-        return input @ self.weight.T
+        return self.activation_function(input @ self.weight.T)
 
     def update(self, lr):
-        # Nothing to do
-        return
+        self.weight = (self.weight - lr * self.weight.grad).detach().requires_grad_()
 
     def zero_grad(self):
-        # Nothing to do
-        return
+        if self.weight.grad is not None:
+            self.weight.grad.zero_()
 
 
 class random_function(abstract_function):
     def __init__(self, in_dim, out_dim, layer, device, params):
         super().__init__(in_dim, out_dim, layer, device)
-        self.weight = torch.eye(self.out_dim, self.in_dim, device=self.device)
+        self.weight = torch.empty(out_dim, in_dim, device=device)
+        if params["init"] == "uniform":
+            nn.init.uniform_(self.weight, -1e-3, 1e-3)
+        elif params["init"] == "gaussian":
+            nn.init.normal_(self.weight, 0, 1e-3)
+        elif params["init"] == "orthogonal":
+            nn.init.orthogonal_(self.weight)
+        else:
+            raise NotImplementedError()
+        self.activation_function = nn.Tanh()
 
     def forward(self, input, original, update):
-        return input @ self.weight.T
+        return self.activation_function(input @ self.weight.T)
 
     def update(self, lr):
         # Nothing to do
@@ -76,7 +94,6 @@ class random_function(abstract_function):
 class difference_function(abstract_function):
     def __init__(self, in_dim, out_dim, layer, device, params):
         super().__init__(in_dim, out_dim, layer, device)
-        self.weight = torch.eye(self.out_dim, self.in_dim, device=self.device)
 
     def forward(self, input, original, update):
         return input @ self.weight.T
