@@ -37,3 +37,54 @@ class identity_function(abstract_function):
     def zero_grad(self):
         # Nothing to do
         return
+
+
+class parameterized_function(abstract_function):
+    def __init__(self, in_dim, out_dim, layer, device, params):
+        super().__init__(in_dim, out_dim, layer, device)
+        self.weight = torch.eye(self.out_dim, self.in_dim, device=self.device)
+
+    def forward(self, input, original, update):
+        return input @ self.weight.T
+
+    def update(self, lr):
+        # Nothing to do
+        return
+
+    def zero_grad(self):
+        # Nothing to do
+        return
+
+
+class random_function(abstract_function):
+    def __init__(self, in_dim, out_dim, layer, device, params):
+        super().__init__(in_dim, out_dim, layer, device)
+        self.weight = torch.eye(self.out_dim, self.in_dim, device=self.device)
+
+    def forward(self, input, original, update):
+        return input @ self.weight.T
+
+    def update(self, lr):
+        # Nothing to do
+        return
+
+    def zero_grad(self):
+        # Nothing to do
+        return
+
+
+class difference_function(abstract_function):
+    def __init__(self, in_dim, out_dim, layer, device, params):
+        super().__init__(in_dim, out_dim, layer, device)
+        self.weight = torch.eye(self.out_dim, self.in_dim, device=self.device)
+
+    def forward(self, input, original, update):
+        return input @ self.weight.T
+
+    def update(self, lr):
+        # Nothing to do
+        return
+
+    def zero_grad(self):
+        # Nothing to do
+        return

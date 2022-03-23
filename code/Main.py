@@ -35,10 +35,19 @@ def get_args():
 
     parser.add_argument("--learning_rate", "-lr", type=float, default=1e-2)
     parser.add_argument("--learning_rate_backward", "-lrb", type=float, default=1e-2)
-
     parser.add_argument("--stepsize", type=float, default=1e-2)
 
     parser.add_argument("--label_augmentation", action="store_true")
+
+    # setting of tp_layer
+    parser.add_argument("forward_function_1", "-ff1", type=str, default="identity",
+                        choices=["identity", "parameterized"])
+    parser.add_argument("forward_function_2", "-ff2", type=str, default="identity",
+                        choices=["identity", "parameterized"])
+    parser.add_argument("backward_function_1", "-bf1", type=str, default="identity",
+                        choices=["identity", "random", "parameterized"])
+    parser.add_argument("backward_function_2", "-bf2", type=str, default="identity",
+                        choices=["identity", "random", "difference"])
 
     # wandb
     parser.add_argument("--log", action="store_true")
