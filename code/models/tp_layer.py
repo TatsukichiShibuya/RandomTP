@@ -28,19 +28,19 @@ class tp_layer:
     def forward(self, x, update=True):
         if update:
             self.input = x
-            self.hidden = self.forward_function_1.forward(self.input, self.input, update=update)
-            self.output = self.forward_function_2.forward(self.hidden, self.input, update=update)
+            self.hidden = self.forward_function_1.forward(self.input)
+            self.output = self.forward_function_2.forward(self.hidden)
             self.output = self.output.requires_grad_()
             self.output.retain_grad()
             return self.output
         else:
-            h = self.forward_function_1.forward(x, x, update=update)
-            y = self.forward_function_2.forward(h, x, update=update)
+            h = self.forward_function_1.forward(x)
+            y = self.forward_function_2.forward(h)
             return y
 
     def backward(self, x, update=True):
-        h = self.backward_function_1.forward(x, x, update=update)
-        y = self.backward_function_2.forward(h, x, update=update)
+        h = self.backward_function_1.forward(x)
+        y = self.backward_function_2.forward(h, x)
         return y
 
     def update_forward(self, lr):
@@ -48,8 +48,8 @@ class tp_layer:
         self.forward_function_2.update(lr)
 
     def update_backward(self, lr):
-        self.forward_function_1.update(lr)
-        self.forward_function_2.update(lr)
+        self.backward_function_1.update(lr)
+        self.backward_function_2.update(lr)
 
     def zero_grad(self):
         if self.output.grad is not None:
@@ -68,6 +68,6 @@ def set_function(in_dim, out_dim, layer, device, params):
     elif params["type"] == "parameterized":
         return parameterized_function(in_dim, out_dim, layer, device, params)
     elif params["type"] == "difference":
-        return identity_function(in_dim, out_dim, layer, device, params)
+        return difference_function(in_dim, out_dim, layer, device, params)
     else:
         raise NotImplementedError()

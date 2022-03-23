@@ -11,16 +11,16 @@ class abstract_function(metaclass=ABCMeta):
         self.device = device
 
     @abstractmethod
-    def forward(self, input, original, update):
+    def forward(self, input, original=None):
         raise NotImplementedError()
 
-    @abstractmethod
     def update(self, lr):
-        raise NotImplementedError()
+        # Nothing to do
+        return
 
-    @abstractmethod
     def zero_grad(self):
-        raise NotImplementedError()
+        # Nothing to do
+        return
 
 
 class identity_function(abstract_function):
@@ -28,16 +28,8 @@ class identity_function(abstract_function):
         super().__init__(in_dim, out_dim, layer, device)
         self.weight = torch.eye(out_dim, in_dim, device=device)
 
-    def forward(self, input, original, update):
+    def forward(self, input, original=None):
         return input @ self.weight.T
-
-    def update(self, lr):
-        # Nothing to do
-        return
-
-    def zero_grad(self):
-        # Nothing to do
-        return
 
 
 class parameterized_function(abstract_function):
@@ -54,7 +46,7 @@ class parameterized_function(abstract_function):
             raise NotImplementedError()
         self.activation_function = nn.Tanh()
 
-    def forward(self, input, original, update):
+    def forward(self, input, original=None):
         return self.activation_function(input @ self.weight.T)
 
     def update(self, lr):
@@ -79,29 +71,17 @@ class random_function(abstract_function):
             raise NotImplementedError()
         self.activation_function = nn.Tanh()
 
-    def forward(self, input, original, update):
+    def forward(self, input, original=None):
         return self.activation_function(input @ self.weight.T)
-
-    def update(self, lr):
-        # Nothing to do
-        return
-
-    def zero_grad(self):
-        # Nothing to do
-        return
 
 
 class difference_function(abstract_function):
     def __init__(self, in_dim, out_dim, layer, device, params):
         super().__init__(in_dim, out_dim, layer, device)
 
-    def forward(self, input, original, update):
-        return input @ self.weight.T
-
-    def update(self, lr):
-        # Nothing to do
-        return
-
-    def zero_grad(self):
-        # Nothing to do
-        return
+    def forward(self, input, original=None):
+        with torch.no_grad():
+            upper = self.layer.forward(original, update=False)
+            rec = self.layer.backward_function_1.forward(upper)
+            difference = original - rec
+        return input + difference
