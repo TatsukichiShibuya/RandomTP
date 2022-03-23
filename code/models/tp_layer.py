@@ -38,9 +38,10 @@ class tp_layer:
             y = self.forward_function_2.forward(h)
             return y
 
-    def backward(self, x, update=True):
-        h = self.backward_function_1.forward(x)
-        y = self.backward_function_2.forward(h, x)
+    def backward(self, x, update=True, no_difference=False):
+        y = self.backward_function_1.forward(x)
+        if not (no_difference and isinstance(self.backward_function_2, difference_function)):
+            y = self.backward_function_2.forward(y, x)
         return y
 
     def update_forward(self, lr):

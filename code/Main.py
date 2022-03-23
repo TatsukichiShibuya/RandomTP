@@ -144,5 +144,8 @@ def set_params(kwargs):
 
 if __name__ == '__main__':
     FLAGS = vars(get_args())
-    print(FLAGS)
+    # print(FLAGS)
+    print(f"Forward  : {FLAGS['forward_function_1']} -> {FLAGS['forward_function_2']}")
+    print(f"Backward : {FLAGS['backward_function_1']} -> {FLAGS['backward_function_2']}")
+
     main(**FLAGS)

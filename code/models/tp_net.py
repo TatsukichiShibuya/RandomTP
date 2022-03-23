@@ -34,15 +34,16 @@ class tp_net(net):
     def train(self, train_loader, valid_loader, epochs, lr, lrb, stepsize, log, params=None):
         # reconstruction loss
         rec_loss = self.reconstruction_loss_of_dataset(train_loader)
-        print(f"\tRec Loss       : {rec_loss}")
+        print(f"Initial Rec Loss: {rec_loss}", end="")
 
         # train backward
         for e in range(5):
-            print(f"Epoch {e}")
             torch.cuda.empty_cache()
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
                 self.train_back_weights(x, y, lrb)
+        rec_loss = self.reconstruction_loss_of_dataset(train_loader)
+        print(f" -> : {rec_loss}")
 
         # train forward
         for e in range(epochs):
@@ -84,7 +85,15 @@ class tp_net(net):
                     print(f"\tValid Acc      : {valid_acc}")
 
     def train_back_weights(self, x, y, lrb):
-        return
+        self.forward(x)
+        for d in reversed(range(1, self.depth - self.direct_depth + 1)):
+            q = self.layers[d - 1].output.detach().clone()
+            q = q + torch.normal(0, 0.05, size=q.shape, device=self.device)
+            h = self.layers[d].backward(self.layers[d].forward(q, update=False), no_difference=True)
+            loss = self.MSELoss(h, q)
+            self.layers[d].zero_grad()
+            loss.backward(retain_graph=True)
+            self.layers[d].update_backward(lrb / len(x))
 
     def compute_target(self, x, y, stepsize):
         y_pred = self.forward(x)
@@ -103,13 +112,11 @@ class tp_net(net):
 
     def update_weights(self, x, lr):
         self.forward(x)
-        batch_size = len(x)
-        for d in reversed(range(self.depth)):
-            t, h = self.layers[d].target, self.layers[d].output
-            loss = self.MSELoss(t, h)
+        for d in range(self.depth):
+            loss = self.MSELoss(self.layers[d].target, self.layers[d].output)
             self.layers[d].zero_grad()
             loss.backward(retain_graph=True)
-            self.layers[d].update_forward(lr / batch_size)
+            self.layers[d].update_forward(lr / len(x))
 
     def reconstruction_loss(self, x):
         h_bottom = self.layers[0].forward(x)
