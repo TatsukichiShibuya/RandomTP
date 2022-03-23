@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from abc import ABCMeta, abstractmethod
+from utils import batch_normalization
 
 
 class abstract_function(metaclass=ABCMeta):
@@ -44,7 +45,15 @@ class parameterized_function(abstract_function):
             nn.init.orthogonal_(self.weight)
         else:
             raise NotImplementedError()
-        self.activation_function = nn.Tanh()
+        if params["act"] == "tanh":
+            self.activation_function = nn.Tanh()
+        elif params["act"] == "linear":
+            self.activation_function = (lambda x: x)
+        elif params["act"] == "tanh-BN":
+            tanh = nn.Tanh()
+            self.activation_function = (lambda x: batch_normalization(tanh(x)))
+        elif params["act"] == "linear-BN":
+            self.activation_function = (lambda x: batch_normalization(x))
 
     def forward(self, input, original=None):
         return self.activation_function(input @ self.weight.T)
@@ -69,7 +78,15 @@ class random_function(abstract_function):
             nn.init.orthogonal_(self.weight)
         else:
             raise NotImplementedError()
-        self.activation_function = nn.Tanh()
+        if params["act"] == "tanh":
+            self.activation_function = nn.Tanh()
+        elif params["act"] == "linear":
+            self.activation_function = (lambda x: x)
+        elif params["act"] == "tanh-BN":
+            tanh = nn.Tanh()
+            self.activation_function = (lambda x: batch_normalization(tanh(x)))
+        elif params["act"] == "linear-BN":
+            self.activation_function = (lambda x: batch_normalization(x))
 
     def forward(self, input, original=None):
         return self.activation_function(input @ self.weight.T)
