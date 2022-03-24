@@ -87,6 +87,8 @@ class random_function(abstract_function):
             self.activation_function = (lambda x: batch_normalization(tanh(x)))
         elif params["act"] == "linear-BN":
             self.activation_function = (lambda x: batch_normalization(x))
+        else:
+            raise NotImplementedError()
 
     def forward(self, input, original=None):
         return self.activation_function(input @ self.weight.T)

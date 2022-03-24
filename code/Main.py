@@ -33,8 +33,8 @@ def get_args():
     parser.add_argument("--hid_dim", type=int, default=256)
     parser.add_argument("--out_dim", type=int, default=10)
 
-    parser.add_argument("--learning_rate", "-lr", type=float, default=1e-2)
-    parser.add_argument("--learning_rate_backward", "-lrb", type=float, default=1e-2)
+    parser.add_argument("--learning_rate", "-lr", type=float, default=1e-3)
+    parser.add_argument("--learning_rate_backward", "-lrb", type=float, default=1e-3)
     parser.add_argument("--stepsize", type=float, default=1e-2)
 
     parser.add_argument("--label_augmentation", action="store_true")

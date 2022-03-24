@@ -34,16 +34,17 @@ class tp_net(net):
     def train(self, train_loader, valid_loader, epochs, lr, lrb, stepsize, log, params=None):
         # reconstruction loss
         rec_loss = self.reconstruction_loss_of_dataset(train_loader)
-        print(f"Initial Rec Loss: {rec_loss}", end="")
+        print(f"Initial Rec Loss: {rec_loss} ", end="")
 
         # train backward
         for e in range(5):
+            print("-", end="")
             torch.cuda.empty_cache()
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
                 self.train_back_weights(x, y, lrb)
         rec_loss = self.reconstruction_loss_of_dataset(train_loader)
-        print(f" -> : {rec_loss}")
+        print(f"> {rec_loss}")
 
         # train forward
         for e in range(epochs):
@@ -56,15 +57,16 @@ class tp_net(net):
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
+                a = self.loss_function(self.forward(x), y)
                 self.compute_target(x, y, stepsize)
                 self.update_weights(x, lr)
+                b = self.loss_function(self.forward(x), y)
 
             # predict
             with torch.no_grad():
                 train_loss, train_acc = self.test(train_loader)
                 valid_loss, valid_acc = self.test(valid_loader)
                 rec_loss = self.reconstruction_loss_of_dataset(train_loader)
-
             # log
             if log:
                 log_dict["train loss"] = train_loss
@@ -88,7 +90,7 @@ class tp_net(net):
         self.forward(x)
         for d in reversed(range(1, self.depth - self.direct_depth + 1)):
             q = self.layers[d - 1].output.detach().clone()
-            q = q + torch.normal(0, 0.05, size=q.shape, device=self.device)
+            q = q + torch.normal(0, 0.03, size=q.shape, device=self.device)
             h = self.layers[d].backward(self.layers[d].forward(q, update=False), no_difference=True)
             loss = self.MSELoss(h, q)
             self.layers[d].zero_grad()
@@ -108,7 +110,9 @@ class tp_net(net):
                     stepsize * self.layers[d].output.grad
 
             for d in reversed(range(self.depth - self.direct_depth)):
-                self.layers[d].target = self.layers[d + 1].backward(self.layers[d + 1].target)
+                plane = self.layers[d + 1].backward_function_1.forward(self.layers[d + 1].target)
+                diff = self.layers[d + 1].backward_function_2.forward(plane, self.layers[d].output)
+                self.layers[d].target = diff
 
     def update_weights(self, x, lr):
         self.forward(x)
@@ -143,7 +147,7 @@ class tp_net(net):
         for d in range(1, self.depth - self.direct_depth + 1):
             h_upper = self.layers[d].forward(h, update=False)
             h_rec = self.layers[d].backward(h_upper)
-            layerwise_loss_sum[d - 1] = self.MSELoss(h, h_rec)
+            layerwise_rec_loss[d - 1] = self.MSELoss(h, h_rec)
             h = h_upper
         return layerwise_rec_loss
 
@@ -151,8 +155,8 @@ class tp_net(net):
         layerwise_rec_loss = torch.zeros(self.depth - self.direct_depth, device=self.device)
         for x, y in data_loader:
             x, y = x.to(self.device), y.to(self.device)
-            layerwise_rec_loss = layerwise_rec_loss + layerwise_reconstruction_loss(x)
-        if torch.isnan(rec_loss).any():
+            layerwise_rec_loss = layerwise_rec_loss + self.layerwise_reconstruction_loss(x)
+        if torch.isnan(layerwise_rec_loss).any():
             print("ERROR: rec loss diverged")
             sys.exit(1)
         return layerwise_rec_loss / len(data_loader.dataset)
