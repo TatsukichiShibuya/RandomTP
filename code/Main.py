@@ -13,7 +13,7 @@ import numpy as np
 from torch import nn
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-BP_list = []
+BP_LIST = []
 TP_LIST = ["DTP", "DTP-BN", "RTP", "RTP-BN", "ITP", "ITP-BN"]
 
 
