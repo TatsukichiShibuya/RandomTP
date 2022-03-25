@@ -236,7 +236,7 @@ def set_params(kwargs):
                          "act": "tanh-BN"}
         params["bf1"] = {"type": "identity",
                          "init": None,
-                         "act": "linaer-BN"}
+                         "act": "linear-BN"}
         params["bf2"] = {"type": "difference",
                          "init": None,
                          "act": "linear-BN"}
