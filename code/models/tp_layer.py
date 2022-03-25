@@ -60,6 +60,13 @@ class tp_layer:
         self.backward_function_1.zero_grad()
         self.backward_function_2.zero_grad()
 
+    def get_forward_grad(self):
+        ff1_grad = self.forward_function_1.get_grad()
+        ff2_grad = self.forward_function_2.get_grad().clone()
+        grad = {"ff1": ff1_grad.clone() if ff1_grad is not None else None,
+                "ff2": ff2_grad.clone() if ff2_grad is not None else None, }
+        return grad
+
 
 def set_function(in_dim, out_dim, layer, device, params):
     if params["type"] == "identity":

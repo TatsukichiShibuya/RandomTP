@@ -23,6 +23,10 @@ class abstract_function(metaclass=ABCMeta):
         # Nothing to do
         return
 
+    def get_grad(self):
+        # Nothing to do
+        return None
+
 
 class identity_function(abstract_function):
     def __init__(self, in_dim, out_dim, layer, device, params):
@@ -70,6 +74,9 @@ class parameterized_function(abstract_function):
     def zero_grad(self):
         if self.weight.grad is not None:
             self.weight.grad.zero_()
+
+    def get_grad(self):
+        return self.weight.grad
 
 
 class random_function(abstract_function):
