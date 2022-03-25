@@ -20,7 +20,7 @@ TP_LIST = ["TP", "DTP", "RTP", "ID", "Custom"]
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--problem", type=str, default="MNIST", choices=["MNIST"])
+    parser.add_argument("--dataset", type=str, default="MNIST", choices=["MNIST"])
     parser.add_argument("--algorithm", type=str, default="BP", choices=BP_LIST + TP_LIST)
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=128)
@@ -89,7 +89,7 @@ def main(**kwargs):
     print(f"{params['bf1']['type']}({params['bf1']['act']},{params['bf1']['init']})", end="")
     print(f" -> {params['bf2']['type']}({params['bf2']['act']},{params['bf2']['init']})")
 
-    if kwargs["problem"] == "MNIST":
+    if kwargs["dataset"] == "MNIST":
         num_classes = 10
         trainset, validset, testset = make_MNIST(kwargs["label_augmentation"], kwargs["out_dim"])
     else:
