@@ -28,9 +28,15 @@ class identity_function(abstract_function):
     def __init__(self, in_dim, out_dim, layer, device, params):
         super().__init__(in_dim, out_dim, layer, device)
         self.weight = torch.eye(out_dim, in_dim, device=device)
+        if (params["act"] is None) or (params["act"] == "linear"):
+            self.activation_function = (lambda x: x)
+        elif params["act"] == "linear-BN":
+            self.activation_function = (lambda x: batch_normalization(x))
+        else:
+            raise NotImplementedError()
 
     def forward(self, input, original=None):
-        return input @ self.weight.T
+        return self.activation_function(input @ self.weight.T)
 
 
 class parameterized_function(abstract_function):
@@ -97,7 +103,7 @@ class random_function(abstract_function):
 class difference_function(abstract_function):
     def __init__(self, in_dim, out_dim, layer, device, params):
         super().__init__(in_dim, out_dim, layer, device)
-        if params["act"] is None:
+        if (params["act"] is None) or (params["act"] == "linear"):
             self.activation_function = (lambda x: x)
         elif params["act"] == "linear-BN":
             self.activation_function = (lambda x: batch_normalization(x))

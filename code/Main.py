@@ -14,7 +14,7 @@ from torch import nn
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 BP_LIST = ["BP"]
-TP_LIST = ["TP", "DTP", "RTP", "ID", "Custom"]
+TP_LIST = ["DTP", "DTP-BN", "RTP", "RTP-BN", "ITP", "ITP-BN"]
 
 
 def get_args():
@@ -24,7 +24,7 @@ def get_args():
                         choices=["MNIST", "fashionMNIST", "CIFAR10", "CIFAR100"])
     parser.add_argument("--algorithm", type=str, default="BP", choices=BP_LIST + TP_LIST)
     parser.add_argument("--epochs", type=int, default=100)
-    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--seed", type=int, default=1)
 
     # model architecture
@@ -161,46 +161,85 @@ def set_params(kwargs):
             "bf1": "backward_function_1",
             "bf2": "backward_function_2"}
     params = {}
-    if kwargs["algorithm"] == "Custom":
-        for key in name.keys():
-            if kwargs[name[key]] in ["random", "parameterized"]:
-                params[key] = {"type": kwargs[name[key]],
-                               "init": kwargs[name[key] + "_init"],
-                               "act": kwargs[name[key] + "_activation"]}
-            elif kwargs[name[key]] in ["identity", "difference"]:
-                params[key] = {"type": kwargs[name[key]], "init": None, "act": None}
-    elif kwargs["algorithm"] == "TP":
-        params["ff1"] = {"type": "identity", "init": None, "act": None}
+    if kwargs["algorithm"] == "DTP":
+        params["ff1"] = {"type": "identity",
+                         "init": None,
+                         "act": "linear"}
         params["ff2"] = {"type": "parameterized",
                          "init": kwargs[name["ff2"] + "_init"],
-                         "act": kwargs[name["ff2"] + "_activation"]}
+                         "act": "tanh"}
         params["bf1"] = {"type": "parameterized",
                          "init": kwargs[name["bf1"] + "_init"],
-                         "act": kwargs[name["bf1"] + "_activation"]}
-        params["bf2"] = {"type": "identity", "init": None, "act": None}
-    elif kwargs["algorithm"] == "DTP":
-        params["ff1"] = {"type": "identity", "init": None, "act": None}
+                         "act": "tanh"}
+        params["bf2"] = {"type": "difference",
+                         "init": None,
+                         "act": "linear"}
+    elif kwargs["algorithm"] == "DTP-BN":
+        params["ff1"] = {"type": "identity",
+                         "init": None,
+                         "act": "linear"}
         params["ff2"] = {"type": "parameterized",
                          "init": kwargs[name["ff2"] + "_init"],
-                         "act": kwargs[name["ff2"] + "_activation"]}
+                         "act": "tanh-BN"}
         params["bf1"] = {"type": "parameterized",
                          "init": kwargs[name["bf1"] + "_init"],
-                         "act": kwargs[name["bf1"] + "_activation"]}
-        params["bf2"] = {"type": "difference", "init": None, "act": None}
+                         "act": "tanh-BN"}
+        params["bf2"] = {"type": "difference",
+                         "init": None,
+                         "act": "linear-BN"}
     elif kwargs["algorithm"] == "RTP":
-        params["ff1"] = {"type": "identity", "init": None, "act": None}
+        params["ff1"] = {"type": "identity",
+                         "init": None,
+                         "act": "linear"}
         params["ff2"] = {"type": "parameterized",
                          "init": kwargs[name["ff2"] + "_init"],
-                         "act": kwargs[name["ff2"] + "_activation"]}
+                         "act": "tanh"}
         params["bf1"] = {"type": "random",
                          "init": kwargs[name["bf1"] + "_init"],
-                         "act": kwargs[name["bf1"] + "_activation"]}
-        params["bf2"] = {"type": "difference", "init": None, "act": "linear-BN"}
-    elif kwargs["algorithm"] == "ID":
-        params["ff1"] = {"type": "identity", "init": None, "act": None}
-        params["ff2"] = {"type": "identity", "init": None, "act": None}
-        params["bf1"] = {"type": "identity", "init": None, "act": None}
-        params["bf2"] = {"type": "identity", "init": None, "act": None}
+                         "act": "tanh"}
+        params["bf2"] = {"type": "difference",
+                         "init": None,
+                         "act": "linear"}
+    elif kwargs["algorithm"] == "RTP-BN":
+        params["ff1"] = {"type": "identity",
+                         "init": None,
+                         "act": "linear"}
+        params["ff2"] = {"type": "parameterized",
+                         "init": kwargs[name["ff2"] + "_init"],
+                         "act": "tanh-BN"}
+        params["bf1"] = {"type": "random",
+                         "init": kwargs[name["bf1"] + "_init"],
+                         "act": "tanh-BN"}
+        params["bf2"] = {"type": "difference",
+                         "init": None,
+                         "act": "linear-BN"}
+    elif kwargs["algorithm"] == "ITP":
+        params["ff1"] = {"type": "identity",
+                         "init": None,
+                         "act": "linear"}
+        params["ff2"] = {"type": "parameterized",
+                         "init": kwargs[name["ff2"] + "_init"],
+                         "act": "tanh"}
+        params["bf1"] = {"type": "identity",
+                         "init": None,
+                         "act": "linear"}
+        params["bf2"] = {"type": "difference",
+                         "init": None,
+                         "act": "linear"}
+    elif kwargs["algorithm"] == "ITP-BN":
+        params["ff1"] = {"type": "identity",
+                         "init": None,
+                         "act": "linear"}
+        params["ff2"] = {"type": "parameterized",
+                         "init": kwargs[name["ff2"] + "_init"],
+                         "act": "tanh-BN"}
+        params["bf1"] = {"type": "identity",
+                         "init": None,
+                         "act": "linaer-BN"}
+        params["bf2"] = {"type": "difference",
+                         "init": None,
+                         "act": "linear-BN"}
+
     return params
 
 
