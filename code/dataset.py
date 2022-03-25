@@ -61,6 +61,33 @@ def make_MNIST(label_augmentation=False, dim=None):
     return trainset, testset, testset
 
 
+def make_fashionMNIST(label_augmentation=False, dim=None):
+    transform = transforms.Compose([transforms.ToTensor(),
+                                    transforms.Normalize((0.1307,), (0.3081,))])
+
+    fashion_train = tv.datasets.FashionMNIST(root='./data', train=True,
+                                             download=True, transform=transform)
+    train_x, train_y = torch.empty([60000, 784]), torch.empty([60000], dtype=torch.long)
+    for i, t in enumerate(list(fashion_train)):
+        train_x[i], train_y[i] = t[0].reshape((-1)), t[1]
+    if label_augmentation:
+        trainset = MyAugmentedClassification(train_x, train_y, dim, 10)
+    else:
+        trainset = MyClassification(train_x, train_y)
+
+    fashion_test = tv.datasets.FashionMNIST(root='./data', train=False,
+                                            download=True, transform=transform)
+    test_x, test_y = torch.empty([10000, 784]), torch.empty([10000], dtype=torch.long)
+    for i, t in enumerate(list(fashion_test)):
+        test_x[i], test_y[i] = t[0].reshape((-1)), t[1]
+    if label_augmentation:
+        testset = MyAugmentedClassification(test_x, test_y, dim, 10)
+    else:
+        testset = MyClassification(test_x, test_y)
+
+    return trainset, testset, testset
+
+
 def make_CIFAR10(label_augmentation=False, dim=None):
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.1307,), (0.3081,))])
@@ -107,33 +134,6 @@ def make_CIFAR100(label_augmentation=False, dim=None):
         test_x[i], test_y[i] = t[0].reshape((-1)), t[1]
     if label_augmentation:
         testset = MyAugmentedClassification(test_x, test_y, dim, 100)
-    else:
-        testset = MyClassification(test_x, test_y)
-
-    return trainset, testset, testset
-
-
-def make_fashionMNIST(label_augmentation=False, dim=None):
-    transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize((0.1307,), (0.3081,))])
-
-    fashion_train = tv.datasets.FashionMNIST(root='./data', train=True,
-                                             download=True, transform=transform)
-    train_x, train_y = torch.empty([60000, 784]), torch.empty([60000], dtype=torch.long)
-    for i, t in enumerate(list(fashion_train)):
-        train_x[i], train_y[i] = t[0].reshape((-1)), t[1]
-    if label_augmentation:
-        trainset = MyAugmentedClassification(train_x, train_y, dim, 10)
-    else:
-        trainset = MyClassification(train_x, train_y)
-
-    fashion_test = tv.datasets.FashionMNIST(root='./data', train=False,
-                                            download=True, transform=transform)
-    test_x, test_y = torch.empty([10000, 784]), torch.empty([10000], dtype=torch.long)
-    for i, t in enumerate(list(fashion_test)):
-        test_x[i], test_y[i] = t[0].reshape((-1)), t[1]
-    if label_augmentation:
-        testset = MyAugmentedClassification(test_x, test_y, dim, 10)
     else:
         testset = MyClassification(test_x, test_y)
 
