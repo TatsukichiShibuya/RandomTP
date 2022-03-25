@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch import nn
 import math
+import wandb
 
 
 def combined_loss(pred, label, device="cpu", num_classes=10):
@@ -60,8 +61,17 @@ def batch_normalization_inverse(y, mean, std):
     return y * std + mean
 
 
-def set_wandb(**kwargs):
-    pass
+def set_wandb(args, params):
+    config = args.copy()
+    name = {"ff1": "forward_function_1",
+            "ff2": "forward_function_2",
+            "bf1": "backward_function_1",
+            "bf2": "backward_function_2"}
+    for n in name.keys():
+        config[name[n]] = params[n]["type"]
+        config[name[n] + "_init"] = params[n]["init"]
+        config[name[n] + "_activation"] = params[n]["act"]
+    wandb.init(config=config)
 
 
 def set_device():

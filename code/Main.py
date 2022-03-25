@@ -78,9 +78,9 @@ def get_args():
 
 def main(**kwargs):
     set_seed(kwargs["seed"])
-    set_wandb(**kwargs)
     device = set_device()
     params = set_params(kwargs)
+    set_wandb(kwargs, params)
     print(f"DEVICE: {device}")
     print("Forward  : ", end="")
     print(f"{params['ff1']['type']}({params['ff1']['act']},{params['ff1']['init']})", end="")
