@@ -13,7 +13,7 @@ import numpy as np
 from torch import nn
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-BP_LIST = ["BP"]
+BP_list = []
 TP_LIST = ["DTP", "DTP-BN", "RTP", "RTP-BN", "ITP", "ITP-BN"]
 
 
@@ -22,7 +22,7 @@ def get_args():
 
     parser.add_argument("--dataset", type=str, default="MNIST",
                         choices=["MNIST", "fashionMNIST", "CIFAR10", "CIFAR100"])
-    parser.add_argument("--algorithm", type=str, default="BP", choices=BP_LIST + TP_LIST)
+    parser.add_argument("--algorithm", type=str, default="RTP", choices=BP_LIST + TP_LIST)
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--seed", type=int, default=1)
