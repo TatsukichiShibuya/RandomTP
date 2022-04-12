@@ -58,7 +58,7 @@ def make_MNIST(label_augmentation=False, dim=None):
     else:
         testset = MyClassification(test_x, test_y)
 
-    return trainset, testset, testset
+    return trainset, testset
 
 
 def make_fashionMNIST(label_augmentation=False, dim=None):
@@ -85,7 +85,7 @@ def make_fashionMNIST(label_augmentation=False, dim=None):
     else:
         testset = MyClassification(test_x, test_y)
 
-    return trainset, testset, testset
+    return trainset, testset
 
 
 def make_CIFAR10(label_augmentation=False, dim=None):
@@ -110,7 +110,7 @@ def make_CIFAR10(label_augmentation=False, dim=None):
     else:
         testset = MyClassification(test_x, test_y)
 
-    return trainset, testset, testset
+    return trainset, testset
 
 
 def make_CIFAR100(label_augmentation=False, dim=None):
@@ -137,4 +137,4 @@ def make_CIFAR100(label_augmentation=False, dim=None):
     else:
         testset = MyClassification(test_x, test_y)
 
-    return trainset, testset, testset
+    return trainset, testset

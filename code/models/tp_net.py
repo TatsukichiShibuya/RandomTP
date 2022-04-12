@@ -32,7 +32,7 @@ class tp_net(net):
             y = self.layers[d].forward(y, update=update)
         return y
 
-    def train(self, train_loader, valid_loader, epochs, lr, lrb, stepsize, log, params=None):
+    def train(self, train_loader, epochs, lr, lrb, stepsize, log, params=None):
         # reconstruction loss
         rec_loss = self.reconstruction_loss_of_dataset(train_loader)
         print(f"Initial Rec Loss: {rec_loss} ", end="")
@@ -51,7 +51,6 @@ class tp_net(net):
         for e in range(epochs):
             print(f"Epoch {e}")
             torch.cuda.empty_cache()
-            bp_angle_sum = [0] * self.depth
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
@@ -59,28 +58,8 @@ class tp_net(net):
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
-
-                """ monitor """
-                # compute BP-angle
-                y_pred = self.forward(x)
-                loss = self.loss_function(y_pred, y)
-                for d in range(self.depth):
-                    self.layers[d].zero_grad()
-                loss.backward()
-                bp_grad = [None] * self.depth
-                for d in range(self.depth):
-                    bp_grad[d] = self.layers[d].get_forward_grad()
-                """ monitor """
-
                 self.compute_target(x, y, stepsize)
-                tp_grad = self.update_weights(x, lr)
-
-                """ monitor """
-                with torch.no_grad():
-                    for d in range(self.depth):
-                        bp_angle_sum[d] += calc_angle(tp_grad[d]["ff2"].reshape((1, -1)),
-                                                      bp_grad[d]["ff2"].reshape((1, -1))).sum()
-                """ monitor """
+                self.update_weights(x, lr)
 
             # predict
             with torch.no_grad():
@@ -100,8 +79,6 @@ class tp_net(net):
                 log_dict["rec loss"] = rec_loss
                 for d in range(len(layerwise_rec_loss)):
                     log_dict["rec loss " + str(d + 1)] = layerwise_rec_loss[d]
-                for d in range(self.depth):
-                    log_dict["bp angle " + str(d)] = bp_angle_sum[d].item() / len(train_loader)
 
                 wandb.log(log_dict)
             else:
@@ -114,8 +91,6 @@ class tp_net(net):
                 print(f"\tRec Loss       : {rec_loss}")
                 for d in range(len(layerwise_rec_loss)):
                     print(f"\tRec Loss-{d+1} : {layerwise_rec_loss[d]}")
-                for d in range(self.depth):
-                    print(f"\tBP Angle-{d} : {bp_angle_sum[d].item() / len(train_loader)}")
 
     def train_back_weights(self, x, y, lrb):
         self.forward(x)
@@ -147,14 +122,11 @@ class tp_net(net):
 
     def update_weights(self, x, lr):
         self.forward(x)
-        tp_grad = [None] * self.depth
         for d in range(self.depth):
             loss = self.MSELoss(self.layers[d].target, self.layers[d].output)
             self.layers[d].zero_grad()
             loss.backward(retain_graph=True)
-            tp_grad[d] = self.layers[d].get_forward_grad()
             self.layers[d].update_forward(lr / len(x))
-        return tp_grad
 
     def reconstruction_loss(self, x):
         h_bottom = self.layers[0].forward(x)
