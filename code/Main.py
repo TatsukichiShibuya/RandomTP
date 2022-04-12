@@ -1,5 +1,5 @@
 from utils import worker_init_fn, set_seed, combined_loss, set_wandb, set_device
-from dataset import make_MNIST, make_fashionMNIST, make_CIFAR10, make_CIFAR100
+from dataset import make_MNIST, make_FashionMNIST, make_CIFAR10, make_CIFAR100
 
 from models.bp_net import bp_net
 from models.tp_net import tp_net
@@ -21,7 +21,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--dataset", type=str, default="MNIST",
-                        choices=["MNIST", "fashionMNIST", "CIFAR10", "CIFAR100"])
+                        choices=["MNIST", "FashionMNIST", "CIFAR10", "CIFAR100"])
     parser.add_argument("--algorithm", type=str, default="RTP", choices=BP_LIST + TP_LIST)
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=256)
@@ -95,9 +95,9 @@ def main(**kwargs):
     if kwargs["dataset"] == "MNIST":
         num_classes = 10
         trainset, validset, testset = make_MNIST(kwargs["label_augmentation"], kwargs["out_dim"])
-    elif kwargs["dataset"] == "fashionMNIST":
+    elif kwargs["dataset"] == "FashionMNIST":
         num_classes = 10
-        trainset, validset, testset = make_fashionMNIST(
+        trainset, validset, testset = make_FashionMNIST(
             kwargs["label_augmentation"], kwargs["out_dim"])
     elif kwargs["dataset"] == "CIFAR10":
         num_classes = 10

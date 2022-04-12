@@ -63,7 +63,7 @@ def make_MNIST(label_augmentation=False, dim=None):
     return trainset, validset, testset
 
 
-def make_fashionMNIST(label_augmentation=False, dim=None):
+def make_FashionMNIST(label_augmentation=False, dim=None):
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.1307,), (0.3081,))])
 
