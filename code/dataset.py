@@ -101,11 +101,11 @@ def make_CIFAR10(label_augmentation=False, dim=None):
     for i, t in enumerate(list(cifar_train)):
         train_x[i], train_y[i] = t[0].reshape((-1)), t[1]
     if label_augmentation:
-        trainset = MyAugmentedClassification(train_x[:55000], train_y[:55000], dim, 10)
-        validset = MyAugmentedClassification(train_x[55000:], train_y[55000:], dim, 10)
+        trainset = MyAugmentedClassification(train_x[:45000], train_y[:45000], dim, 10)
+        validset = MyAugmentedClassification(train_x[45000:], train_y[45000:], dim, 10)
     else:
-        trainset = MyClassification(train_x[:55000], train_y[:55000])
-        validset = MyClassification(train_x[55000:], train_y[55000:])
+        trainset = MyClassification(train_x[:45000], train_y[:45000])
+        validset = MyClassification(train_x[45000:], train_y[45000:])
 
     cifar_test = tv.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
     test_x, test_y = torch.empty([10000, 3072]), torch.empty([10000], dtype=torch.long)
@@ -129,11 +129,11 @@ def make_CIFAR100(label_augmentation=False, dim=None):
     for i, t in enumerate(list(cifar_train)):
         train_x[i], train_y[i] = t[0].reshape((-1)), t[1]
     if label_augmentation:
-        trainset = MyAugmentedClassification(train_x[:55000], train_y[:55000], dim, 10)
-        validset = MyAugmentedClassification(train_x[55000:], train_y[55000:], dim, 10)
+        trainset = MyAugmentedClassification(train_x[:45000], train_y[:45000], dim, 10)
+        validset = MyAugmentedClassification(train_x[45000:], train_y[45000:], dim, 10)
     else:
-        trainset = MyClassification(train_x[:55000], train_y[:55000])
-        validset = MyClassification(train_x[55000:], train_y[55000:])
+        trainset = MyClassification(train_x[:45000], train_y[:45000])
+        validset = MyClassification(train_x[45000:], train_y[45000:])
 
     cifar_test = tv.datasets.CIFAR100(root='./data', train=False,
                                       download=True, transform=transform)
