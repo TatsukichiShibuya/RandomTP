@@ -93,16 +93,16 @@ def main(**kwargs):
 
     if kwargs["dataset"] == "MNIST":
         num_classes = 10
-        trainset, testset = make_MNIST(kwargs["label_augmentation"], kwargs["out_dim"])
+        trainset, validset, testset = make_MNIST(kwargs["label_augmentation"], kwargs["out_dim"])
     elif kwargs["dataset"] == "fashionMNIST":
         num_classes = 10
-        trainset, testset = make_fashionMNIST(kwargs["label_augmentation"], kwargs["out_dim"])
+        trainset, validset, testset = make_fashionMNIST(kwargs["label_augmentation"], kwargs["out_dim"])
     elif kwargs["dataset"] == "CIFAR10":
         num_classes = 10
-        trainset, testset = make_CIFAR10(kwargs["label_augmentation"], kwargs["out_dim"])
+        trainset, validset, testset = make_CIFAR10(kwargs["label_augmentation"], kwargs["out_dim"])
     elif kwargs["dataset"] == "CIFAR100":
         num_classes = 100
-        trainset, testset = make_CIFAR100(kwargs["label_augmentation"], kwargs["out_dim"])
+        trainset, validset, testset = make_CIFAR100(kwargs["label_augmentation"], kwargs["out_dim"])
     else:
         raise NotImplementedError()
 
@@ -118,6 +118,12 @@ def main(**kwargs):
                                                num_workers=2,
                                                pin_memory=True,
                                                worker_init_fn=worker_init_fn)
+    valid_loader = torch.utils.data.DataLoader(validset,
+                                              batch_size=kwargs["batch_size"],
+                                              shuffle=False,
+                                              num_workers=2,
+                                              pin_memory=True,
+                                              worker_init_fn=worker_init_fn)
     test_loader = torch.utils.data.DataLoader(testset,
                                               batch_size=kwargs["batch_size"],
                                               shuffle=False,
@@ -134,13 +140,13 @@ def main(**kwargs):
                        activation_function=kwargs["activation_function"],
                        loss_function=loss_function,
                        device=device)
-        model.train(train_loader, kwargs["epochs"], kwargs["learning_rate"],
+        model.train(train_loader, valid_loader, kwargs["epochs"], kwargs["learning_rate"],
                     kwargs["log"])
     elif kwargs["algorithm"] in TP_LIST:
         model = tp_net(kwargs["depth"], kwargs["direct_depth"], kwargs["in_dim"],
                        kwargs["hid_dim"], kwargs["out_dim"], loss_function, device, params=params)
-        model.train(train_loader, kwargs["epochs"], kwargs["learning_rate"],
-                    kwargs["learning_rate_backward"], kwargs["stepsize"], kwargs["log"])
+        model.train(train_loader, valid_loader, kwargs["epochs"], kwargs["learning_rate"],
+                        kwargs["learning_rate_backward"], kwargs["stepsize"], kwargs["log"])
 
     # test
     loss, acc = model.test(test_loader)

@@ -32,7 +32,7 @@ class tp_net(net):
             y = self.layers[d].forward(y, update=update)
         return y
 
-    def train(self, train_loader, epochs, lr, lrb, stepsize, log, params=None):
+    def train(self, train_loader, valid_loader, epochs, lr, lrb, stepsize, log, params=None):
         # reconstruction loss
         rec_loss = self.reconstruction_loss_of_dataset(train_loader)
         print(f"Initial Rec Loss: {rec_loss} ", end="")
