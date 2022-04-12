@@ -92,12 +92,22 @@ class tp_net(net):
                 for d in range(len(layerwise_rec_loss)):
                     print(f"\tRec Loss-{d+1} : {layerwise_rec_loss[d]}")
 
-    def train_back_weights(self, x, y, lrb):
+    def train_back_weights(self, x, y, lrb, loss_type="DTP"):
         self.forward(x)
         for d in reversed(range(1, self.depth - self.direct_depth + 1)):
             q = self.layers[d - 1].output.detach().clone()
             q = q + torch.normal(0, 0.03, size=q.shape, device=self.device)
-            h = self.layers[d].backward(self.layers[d].forward(q, update=False), no_difference=True)
+            q_upper = self.layers[d].forward(q)
+            if loss_type == "Full":
+                raise NotImplementedError()
+            elif loss_type == "DTP":
+                h = self.layers[d].backward_function_1.forward(q_upper)
+            elif loss_type == "DRL":
+                raise NotImplementedError()
+            elif loss_type == "L-DRL":
+                raise NotImplementedError()
+            else:
+                raise NotImplementedError()
             loss = self.MSELoss(h, q)
             self.layers[d].zero_grad()
             loss.backward(retain_graph=True)
@@ -129,13 +139,13 @@ class tp_net(net):
             self.layers[d].update_forward(lr / len(x))
 
     def reconstruction_loss(self, x):
-        h_bottom = self.layers[0].forward(x)
-        h = h_bottom
-        for d in range(1, self.depth - self.direct_depth + 1):
-            h = self.layers[d].forward(h)
+        self.forward(x)
+        h = self.layers[self.depth - self.direct_depth].output
         for d in reversed(range(1, self.depth - self.direct_depth + 1)):
-            h = self.layers[d].backward(h)
-        return self.MSELoss(h_bottom, h)
+            plane = self.layers[d].backward_function_1.forward(h)
+            diff = self.layers[d].backward_function_2.forward(plane, self.layers[d - 1].output)
+            h = diff
+        return self.MSELoss(self.layers[0].output, h)
 
     def reconstruction_loss_of_dataset(self, data_loader):
         rec_loss = 0
@@ -149,12 +159,11 @@ class tp_net(net):
 
     def layerwise_reconstruction_loss(self, x):
         layerwise_rec_loss = torch.zeros(self.depth - self.direct_depth, device=self.device)
-        h = self.layers[0].forward(x)
+        self.forward(x)
         for d in range(1, self.depth - self.direct_depth + 1):
-            h_upper = self.layers[d].forward(h, update=False)
-            h_rec = self.layers[d].backward(h_upper)
-            layerwise_rec_loss[d - 1] = self.MSELoss(h, h_rec)
-            h = h_upper
+            plane = self.layers[d].backward_function_1.forward(self.layers[d].output)
+            diff = self.layers[d].backward_function_2.forward(plane, self.layers[d - 1].output)
+            layerwise_rec_loss[d - 1] = self.MSELoss(self.layers[d - 1].output, diff)
         return layerwise_rec_loss
 
     def layerwise_reconstruction_loss_of_dataset(self, data_loader):

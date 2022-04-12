@@ -16,8 +16,8 @@ class tp_layer:
         self.forward_function_2 = set_function(in_dim, out_dim, self, self.device, params["ff2"])
 
         # set backward functions
-        self.backward_function_1 = set_function(out_dim, out_dim, self, self.device, params["bf1"])
-        self.backward_function_2 = set_function(out_dim, in_dim, self, self.device, params["bf2"])
+        self.backward_function_1 = set_function(out_dim, in_dim, self, self.device, params["bf1"])
+        self.backward_function_2 = set_function(in_dim, in_dim, self, self.device, params["bf2"])
 
         # values
         self.input = None
@@ -37,12 +37,6 @@ class tp_layer:
             h = self.forward_function_1.forward(x)
             y = self.forward_function_2.forward(h)
             return y
-
-    def backward(self, x, update=True, no_difference=False):
-        y = self.backward_function_1.forward(x)
-        if not (no_difference and isinstance(self.backward_function_2, difference_function)):
-            y = self.backward_function_2.forward(y, x)
-        return y
 
     def update_forward(self, lr):
         self.forward_function_1.update(lr)
