@@ -26,6 +26,7 @@ def get_args():
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--test", action="store_true")
 
     # model architecture
     parser.add_argument("--depth", type=int, default=6)
@@ -113,24 +114,44 @@ def main(**kwargs):
         loss_function = nn.CrossEntropyLoss(reduction="sum")
 
     # make dataloader
-    train_loader = torch.utils.data.DataLoader(trainset,
-                                               batch_size=kwargs["batch_size"],
-                                               shuffle=True,
-                                               num_workers=2,
-                                               pin_memory=True,
-                                               worker_init_fn=worker_init_fn)
-    valid_loader = torch.utils.data.DataLoader(validset,
-                                               batch_size=kwargs["batch_size"],
-                                               shuffle=False,
-                                               num_workers=2,
-                                               pin_memory=True,
-                                               worker_init_fn=worker_init_fn)
-    test_loader = torch.utils.data.DataLoader(testset,
-                                              batch_size=kwargs["batch_size"],
-                                              shuffle=False,
-                                              num_workers=2,
-                                              pin_memory=True,
-                                              worker_init_fn=worker_init_fn)
+    if kwargs["test"]:
+        train_loader = torch.utils.data.DataLoader(torch.utils.data.ConcatDataset([trainset, validset]),
+                                                   batch_size=kwargs["batch_size"],
+                                                   shuffle=True,
+                                                   num_workers=2,
+                                                   pin_memory=True,
+                                                   worker_init_fn=worker_init_fn)
+        valid_loader = torch.utils.data.DataLoader(testset,
+                                                   batch_size=kwargs["batch_size"],
+                                                   shuffle=False,
+                                                   num_workers=2,
+                                                   pin_memory=True,
+                                                   worker_init_fn=worker_init_fn)
+        test_loader = torch.utils.data.DataLoader(testset,
+                                                  batch_size=kwargs["batch_size"],
+                                                  shuffle=False,
+                                                  num_workers=2,
+                                                  pin_memory=True,
+                                                  worker_init_fn=worker_init_fn)
+    else:
+        train_loader = torch.utils.data.DataLoader(trainset,
+                                                   batch_size=kwargs["batch_size"],
+                                                   shuffle=True,
+                                                   num_workers=2,
+                                                   pin_memory=True,
+                                                   worker_init_fn=worker_init_fn)
+        valid_loader = torch.utils.data.DataLoader(validset,
+                                                   batch_size=kwargs["batch_size"],
+                                                   shuffle=False,
+                                                   num_workers=2,
+                                                   pin_memory=True,
+                                                   worker_init_fn=worker_init_fn)
+        test_loader = torch.utils.data.DataLoader(testset,
+                                                  batch_size=kwargs["batch_size"],
+                                                  shuffle=False,
+                                                  num_workers=2,
+                                                  pin_memory=True,
+                                                  worker_init_fn=worker_init_fn)
 
     # initialize model
     if kwargs["algorithm"] in BP_LIST:
