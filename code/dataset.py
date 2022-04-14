@@ -36,7 +36,7 @@ class MyAugmentedClassification(torch.utils.data.Dataset):
         return feature, label
 
 
-def make_MNIST(label_augmentation=False, dim=None):
+def make_MNIST(label_augmentation=False, dim=None, test=False):
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.1307,), (0.3081,))])
 
@@ -44,17 +44,27 @@ def make_MNIST(label_augmentation=False, dim=None):
     train_x, train_y = torch.empty([60000, 784]), torch.empty([60000], dtype=torch.long)
     for i, t in enumerate(list(mnist_train)):
         train_x[i], train_y[i] = t[0].reshape((-1)), t[1]
-    if label_augmentation:
-        trainset = MyAugmentedClassification(train_x[:55000], train_y[:55000], dim, 10)
-        validset = MyAugmentedClassification(train_x[55000:], train_y[55000:], dim, 10)
-    else:
-        trainset = MyClassification(train_x[:55000], train_y[:55000])
-        validset = MyClassification(train_x[55000:], train_y[55000:])
 
     mnist_test = tv.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
     test_x, test_y = torch.empty([10000, 784]), torch.empty([10000], dtype=torch.long)
     for i, t in enumerate(list(mnist_test)):
         test_x[i], test_y[i] = t[0].reshape((-1)), t[1]
+
+    if label_augmentation:
+        if test:
+            trainset = MyAugmentedClassification(train_x, train_y, dim, 10)
+            validset = MyAugmentedClassification(test_x, test_y, dim, 10)
+        else:
+            trainset = MyAugmentedClassification(train_x[:55000], train_y[:55000], dim, 10)
+            validset = MyAugmentedClassification(train_x[55000:], train_y[55000:], dim, 10)
+    else:
+        if test:
+            trainset = MyClassification(train_x, train_y)
+            validset = MyClassification(test_x, test_y)
+        else:
+            trainset = MyClassification(train_x[:55000], train_y[:55000])
+            validset = MyClassification(train_x[55000:], train_y[55000:])
+
     if label_augmentation:
         testset = MyAugmentedClassification(test_x, test_y, dim, 10)
     else:
@@ -63,7 +73,7 @@ def make_MNIST(label_augmentation=False, dim=None):
     return trainset, validset, testset
 
 
-def make_FashionMNIST(label_augmentation=False, dim=None):
+def make_FashionMNIST(label_augmentation=False, dim=None, test=False):
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.1307,), (0.3081,))])
 
@@ -72,18 +82,28 @@ def make_FashionMNIST(label_augmentation=False, dim=None):
     train_x, train_y = torch.empty([60000, 784]), torch.empty([60000], dtype=torch.long)
     for i, t in enumerate(list(fashion_train)):
         train_x[i], train_y[i] = t[0].reshape((-1)), t[1]
-    if label_augmentation:
-        trainset = MyAugmentedClassification(train_x[:55000], train_y[:55000], dim, 10)
-        validset = MyAugmentedClassification(train_x[55000:], train_y[55000:], dim, 10)
-    else:
-        trainset = MyClassification(train_x[:55000], train_y[:55000])
-        validset = MyClassification(train_x[55000:], train_y[55000:])
 
     fashion_test = tv.datasets.FashionMNIST(root='./data', train=False,
                                             download=True, transform=transform)
     test_x, test_y = torch.empty([10000, 784]), torch.empty([10000], dtype=torch.long)
     for i, t in enumerate(list(fashion_test)):
         test_x[i], test_y[i] = t[0].reshape((-1)), t[1]
+
+    if label_augmentation:
+        if test:
+            trainset = MyAugmentedClassification(train_x, train_y, dim, 10)
+            validset = MyAugmentedClassification(test_x, test_y, dim, 10)
+        else:
+            trainset = MyAugmentedClassification(train_x[:55000], train_y[:55000], dim, 10)
+            validset = MyAugmentedClassification(train_x[55000:], train_y[55000:], dim, 10)
+    else:
+        if test:
+            trainset = MyClassification(train_x, train_y)
+            validset = MyClassification(test_x, test_y)
+        else:
+            trainset = MyClassification(train_x[:55000], train_y[:55000])
+            validset = MyClassification(train_x[55000:], train_y[55000:])
+
     if label_augmentation:
         testset = MyAugmentedClassification(test_x, test_y, dim, 10)
     else:
@@ -92,7 +112,7 @@ def make_FashionMNIST(label_augmentation=False, dim=None):
     return trainset, validset, testset
 
 
-def make_CIFAR10(label_augmentation=False, dim=None):
+def make_CIFAR10(label_augmentation=False, dim=None, test=False):
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.1307,), (0.3081,))])
 
@@ -100,17 +120,27 @@ def make_CIFAR10(label_augmentation=False, dim=None):
     train_x, train_y = torch.empty([50000, 3072]), torch.empty([50000], dtype=torch.long)
     for i, t in enumerate(list(cifar_train)):
         train_x[i], train_y[i] = t[0].reshape((-1)), t[1]
-    if label_augmentation:
-        trainset = MyAugmentedClassification(train_x[:45000], train_y[:45000], dim, 10)
-        validset = MyAugmentedClassification(train_x[45000:], train_y[45000:], dim, 10)
-    else:
-        trainset = MyClassification(train_x[:45000], train_y[:45000])
-        validset = MyClassification(train_x[45000:], train_y[45000:])
 
     cifar_test = tv.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
     test_x, test_y = torch.empty([10000, 3072]), torch.empty([10000], dtype=torch.long)
     for i, t in enumerate(list(cifar_test)):
         test_x[i], test_y[i] = t[0].reshape((-1)), t[1]
+
+    if label_augmentation:
+        if test:
+            trainset = MyAugmentedClassification(train_x, train_y, dim, 10)
+            validset = MyAugmentedClassification(test_x, test_y, dim, 10)
+        else:
+            trainset = MyAugmentedClassification(train_x[:45000], train_y[:45000], dim, 10)
+            validset = MyAugmentedClassification(train_x[45000:], train_y[45000:], dim, 10)
+    else:
+        if test:
+            trainset = MyClassification(train_x, train_y)
+            validset = MyClassification(test_x, test_y)
+        else:
+            trainset = MyClassification(train_x[:45000], train_y[:45000])
+            validset = MyClassification(train_x[45000:], train_y[45000:])
+
     if label_augmentation:
         testset = MyAugmentedClassification(test_x, test_y, dim, 10)
     else:
@@ -119,7 +149,7 @@ def make_CIFAR10(label_augmentation=False, dim=None):
     return trainset, validset, testset
 
 
-def make_CIFAR100(label_augmentation=False, dim=None):
+def make_CIFAR100(label_augmentation=False, dim=None, test=False):
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.1307,), (0.3081,))])
 
@@ -128,18 +158,28 @@ def make_CIFAR100(label_augmentation=False, dim=None):
     train_x, train_y = torch.empty([50000, 3072]), torch.empty([50000], dtype=torch.long)
     for i, t in enumerate(list(cifar_train)):
         train_x[i], train_y[i] = t[0].reshape((-1)), t[1]
-    if label_augmentation:
-        trainset = MyAugmentedClassification(train_x[:45000], train_y[:45000], dim, 10)
-        validset = MyAugmentedClassification(train_x[45000:], train_y[45000:], dim, 10)
-    else:
-        trainset = MyClassification(train_x[:45000], train_y[:45000])
-        validset = MyClassification(train_x[45000:], train_y[45000:])
 
     cifar_test = tv.datasets.CIFAR100(root='./data', train=False,
                                       download=True, transform=transform)
     test_x, test_y = torch.empty([10000, 3072]), torch.empty([10000], dtype=torch.long)
     for i, t in enumerate(list(cifar_test)):
         test_x[i], test_y[i] = t[0].reshape((-1)), t[1]
+
+    if label_augmentation:
+        if test:
+            trainset = MyAugmentedClassification(train_x, train_y, dim, 100)
+            validset = MyAugmentedClassification(test_x, test_y, dim, 100)
+        else:
+            trainset = MyAugmentedClassification(train_x[:45000], train_y[:45000], dim, 100)
+            validset = MyAugmentedClassification(train_x[45000:], train_y[45000:], dim, 100)
+    else:
+        if test:
+            trainset = MyClassification(train_x, train_y)
+            validset = MyClassification(test_x, test_y)
+        else:
+            trainset = MyClassification(train_x[:45000], train_y[:45000])
+            validset = MyClassification(train_x[45000:], train_y[45000:])
+
     if label_augmentation:
         testset = MyAugmentedClassification(test_x, test_y, dim, 100)
     else:

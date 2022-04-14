@@ -100,17 +100,20 @@ def main(**kwargs):
 
     if kwargs["dataset"] == "MNIST":
         num_classes = 10
-        trainset, validset, testset = make_MNIST(kwargs["label_augmentation"], kwargs["out_dim"])
+        trainset, validset, testset = make_MNIST(kwargs["label_augmentation"],
+                                                 kwargs["out_dim"], kwargs["test"])
     elif kwargs["dataset"] == "FashionMNIST":
         num_classes = 10
-        trainset, validset, testset = make_FashionMNIST(
-            kwargs["label_augmentation"], kwargs["out_dim"])
+        trainset, validset, testset = make_FashionMNIST(kwargs["label_augmentation"],
+                                                        kwargs["out_dim"], kwargs["test"])
     elif kwargs["dataset"] == "CIFAR10":
         num_classes = 10
-        trainset, validset, testset = make_CIFAR10(kwargs["label_augmentation"], kwargs["out_dim"])
+        trainset, validset, testset = make_CIFAR10(kwargs["label_augmentation"],
+                                                   kwargs["out_dim"], kwargs["test"])
     elif kwargs["dataset"] == "CIFAR100":
         num_classes = 100
-        trainset, validset, testset = make_CIFAR100(kwargs["label_augmentation"], kwargs["out_dim"])
+        trainset, validset, testset = make_CIFAR100(kwargs["label_augmentation"],
+                                                    kwargs["out_dim"], kwargs["test"])
     else:
         raise NotImplementedError()
 
@@ -120,44 +123,24 @@ def main(**kwargs):
         loss_function = nn.CrossEntropyLoss(reduction="sum")
 
     # make dataloader
-    if kwargs["test"]:
-        train_loader = torch.utils.data.DataLoader(torch.utils.data.ConcatDataset([trainset, validset]),
-                                                   batch_size=kwargs["batch_size"],
-                                                   shuffle=True,
-                                                   num_workers=2,
-                                                   pin_memory=True,
-                                                   worker_init_fn=worker_init_fn)
-        valid_loader = torch.utils.data.DataLoader(testset,
-                                                   batch_size=kwargs["batch_size"],
-                                                   shuffle=False,
-                                                   num_workers=2,
-                                                   pin_memory=True,
-                                                   worker_init_fn=worker_init_fn)
-        test_loader = torch.utils.data.DataLoader(testset,
-                                                  batch_size=kwargs["batch_size"],
-                                                  shuffle=False,
-                                                  num_workers=2,
-                                                  pin_memory=True,
-                                                  worker_init_fn=worker_init_fn)
-    else:
-        train_loader = torch.utils.data.DataLoader(trainset,
-                                                   batch_size=kwargs["batch_size"],
-                                                   shuffle=True,
-                                                   num_workers=2,
-                                                   pin_memory=True,
-                                                   worker_init_fn=worker_init_fn)
-        valid_loader = torch.utils.data.DataLoader(validset,
-                                                   batch_size=kwargs["batch_size"],
-                                                   shuffle=False,
-                                                   num_workers=2,
-                                                   pin_memory=True,
-                                                   worker_init_fn=worker_init_fn)
-        test_loader = torch.utils.data.DataLoader(testset,
-                                                  batch_size=kwargs["batch_size"],
-                                                  shuffle=False,
-                                                  num_workers=2,
-                                                  pin_memory=True,
-                                                  worker_init_fn=worker_init_fn)
+    train_loader = torch.utils.data.DataLoader(trainset,
+                                               batch_size=kwargs["batch_size"],
+                                               shuffle=True,
+                                               num_workers=2,
+                                               pin_memory=True,
+                                               worker_init_fn=worker_init_fn)
+    valid_loader = torch.utils.data.DataLoader(validset,
+                                               batch_size=kwargs["batch_size"],
+                                               shuffle=False,
+                                               num_workers=2,
+                                               pin_memory=True,
+                                               worker_init_fn=worker_init_fn)
+    test_loader = torch.utils.data.DataLoader(testset,
+                                              batch_size=kwargs["batch_size"],
+                                              shuffle=False,
+                                              num_workers=2,
+                                              pin_memory=True,
+                                              worker_init_fn=worker_init_fn)
 
     # initialize model
     if kwargs["algorithm"] in BP_LIST:
