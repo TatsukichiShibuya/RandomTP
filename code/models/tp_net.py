@@ -38,7 +38,7 @@ class tp_net(net):
         print(f"Initial Rec Loss: {rec_loss} ", end="")
 
         # train backward
-        for e in range(5):
+        for e in range(0):
             print("-", end="")
             torch.cuda.empty_cache()
             for x, y in train_loader:
@@ -61,6 +61,23 @@ class tp_net(net):
                 self.compute_target(x, y, stepsize)
                 self.update_weights(x, lr)
 
+            epsilon_l2_loss_sum = [torch.zeros(1) for d in range(self.depth)]
+            epsilon_angle_loss_sum = [torch.zeros(1) for d in range(self.depth)]
+            eta_l2_loss_sum = [torch.zeros(1) for d in range(self.depth)]
+            with torch.no_grad():
+                for x, y in train_loader:
+                    x, y = x.to(self.device), y.to(self.device)
+                    epsilon_l2_loss, epsilon_angle_loss = self.compute_epsilon_loss(x)
+                    eta_l2_loss = self.compute_eta_loss(x)
+                    for d in range(self.depth):
+                        epsilon_l2_loss_sum[d] += epsilon_l2_loss[d].sum()
+                        epsilon_angle_loss_sum[d] += epsilon_angle_loss[d].sum()
+                        eta_l2_loss_sum[d] += eta_l2_loss[d].sum()
+                for d in range(self.depth):
+                    epsilon_l2_loss_sum[d] /= len(train_loader.dataset)
+                    epsilon_angle_loss_sum[d] /= len(train_loader.dataset)
+                    eta_l2_loss_sum[d] /= len(train_loader.dataset)
+
             # predict
             with torch.no_grad():
                 train_loss, train_acc = self.test(train_loader)
@@ -79,18 +96,26 @@ class tp_net(net):
                 log_dict["rec loss"] = rec_loss
                 for d in range(len(layerwise_rec_loss)):
                     log_dict["rec loss " + str(d + 1)] = layerwise_rec_loss[d]
+                for d in range(1, self.depth - self.direct_depth + 1):
+                    log_dict[f"epsilon l2 {d}"] = epsilon_l2_loss_sum[d].item()
+                    log_dict[f"epsilon angle {d}"] = epsilon_angle_loss_sum[d].item()
+                    log_dict[f"eta l2 {d}"] = eta_l2_loss_sum[d].item()
 
                 wandb.log(log_dict)
             else:
-                print(f"\tTrain Loss     : {train_loss}")
-                print(f"\tValid Loss     : {valid_loss}")
+                print(f"\tTrain Loss       : {train_loss}")
+                print(f"\tValid Loss       : {valid_loss}")
                 if train_acc is not None:
-                    print(f"\tTrain Acc      : {train_acc}")
+                    print(f"\tTrain Acc        : {train_acc}")
                 if valid_acc is not None:
-                    print(f"\tValid Acc      : {valid_acc}")
-                print(f"\tRec Loss       : {rec_loss}")
+                    print(f"\tValid Acc        : {valid_acc}")
+                print(f"\tRec Loss         : {rec_loss}")
                 for d in range(len(layerwise_rec_loss)):
-                    print(f"\tRec Loss-{d+1} : {layerwise_rec_loss[d]}")
+                    print(f"\tRec Loss-{d+1}       : {layerwise_rec_loss[d]}")
+                for d in range(1, self.depth - self.direct_depth + 1):
+                    print(f"\tEpsilon-l2-{d}     : {epsilon_l2_loss_sum[d].item()}")
+                    print(f"\tEpsilon-angle-{d}  : {epsilon_angle_loss_sum[d].item()}")
+                    print(f"\tEta-l2-{d}         : {eta_l2_loss_sum[d].item()}")
 
     def train_back_weights(self, x, y, lrb, loss_type="DTP"):
         self.forward(x)
@@ -175,3 +200,29 @@ class tp_net(net):
             print("ERROR: rec loss diverged")
             sys.exit(1)
         return layerwise_rec_loss / len(data_loader.dataset)
+
+    def compute_epsilon_loss(self, x):
+        l2_loss = [torch.zeros(1) for d in range(self.depth)]
+        angle_loss = [torch.zeros(1) for d in range(self.depth)]
+        self.forward(x)
+        for d in range(1, self.depth - self.direct_depth + 1):
+            h = self.layers[d - 1].output.detach().clone()
+            h_e = h + torch.normal(0, 0.03, size=h.shape, device=self.device)
+            h_e_next = self.layers[d].forward(h_e, update=False)
+            h_e_rec = self.layers[d].backward_function_1.forward(h_e_next)
+            h_e_rec = self.layers[d].backward_function_2.forward(h_e_rec, h)
+            l2_loss[d] = torch.norm(h_e - h_e_rec, dim=1)
+            angle_loss[d] = calc_angle(h_e - h, h_e_rec - h)
+        return l2_loss, angle_loss
+
+    def compute_eta_loss(self, x):
+        l2_loss = [torch.zeros(1) for d in range(self.depth)]
+        self.forward(x)
+        for d in range(1, self.depth - self.direct_depth + 1):
+            h = self.layers[d - 1].output.detach().clone()
+            h_next = self.layers[d].forward(h, update=False)
+            h_next_e = h_next + torch.normal(0, 0.03, size=h_next.shape, device=self.device)
+            h_e_rec = self.layers[d].backward_function_1.forward(h_next_e)
+            h_e_rec = self.layers[d].backward_function_2.forward(h_e_rec, h)
+            l2_loss[d] = torch.norm(h - h_e_rec, dim=1)
+        return l2_loss
