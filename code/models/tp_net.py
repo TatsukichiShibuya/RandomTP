@@ -60,7 +60,7 @@ class tp_net(net):
                 x, y = x.to(self.device), y.to(self.device)
                 self.compute_target(x, y, stepsize)
                 self.update_weights(x, lr)
-
+            """
             epsilon_l2_loss_sum = [torch.zeros(1) for d in range(self.depth)]
             epsilon_angle_loss_sum = [torch.zeros(1) for d in range(self.depth)]
             eta_l2_loss_sum = [torch.zeros(1) for d in range(self.depth)]
@@ -77,13 +77,16 @@ class tp_net(net):
                     epsilon_l2_loss_sum[d] /= len(train_loader.dataset)
                     epsilon_angle_loss_sum[d] /= len(train_loader.dataset)
                     eta_l2_loss_sum[d] /= len(train_loader.dataset)
+            """
 
             # predict
             with torch.no_grad():
                 train_loss, train_acc = self.test(train_loader)
                 valid_loss, valid_acc = self.test(valid_loader)
+                """
                 rec_loss = self.reconstruction_loss_of_dataset(train_loader)
                 layerwise_rec_loss = self.layerwise_reconstruction_loss_of_dataset(train_loader)
+                """
             # log
             if log:
                 log_dict = {}
@@ -93,13 +96,17 @@ class tp_net(net):
                     log_dict["train accuracy"] = train_acc
                 if valid_acc is not None:
                     log_dict["valid accuracy"] = valid_acc
+                """
                 log_dict["rec loss"] = rec_loss
                 for d in range(len(layerwise_rec_loss)):
                     log_dict["rec loss " + str(d + 1)] = layerwise_rec_loss[d]
+                """
+                """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict[f"epsilon l2 {d}"] = epsilon_l2_loss_sum[d].item()
                     log_dict[f"epsilon angle {d}"] = epsilon_angle_loss_sum[d].item()
                     log_dict[f"eta l2 {d}"] = eta_l2_loss_sum[d].item()
+                """
 
                 wandb.log(log_dict)
             else:
@@ -109,13 +116,17 @@ class tp_net(net):
                     print(f"\tTrain Acc        : {train_acc}")
                 if valid_acc is not None:
                     print(f"\tValid Acc        : {valid_acc}")
+                """
                 print(f"\tRec Loss         : {rec_loss}")
                 for d in range(len(layerwise_rec_loss)):
                     print(f"\tRec Loss-{d+1}       : {layerwise_rec_loss[d]}")
+                """
+                """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     print(f"\tEpsilon-l2-{d}     : {epsilon_l2_loss_sum[d].item()}")
                     print(f"\tEpsilon-angle-{d}  : {epsilon_angle_loss_sum[d].item()}")
                     print(f"\tEta-l2-{d}         : {eta_l2_loss_sum[d].item()}")
+                """
 
     def train_back_weights(self, x, y, lrb, loss_type="DTP"):
         self.forward(x)

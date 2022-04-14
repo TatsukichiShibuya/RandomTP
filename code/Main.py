@@ -57,7 +57,13 @@ def get_args():
     parser.add_argument("--forward_function_2_init", "-ff2_init", type=str, default="orthogonal",
                         choices=["orthogonal", "gaussian", "uniform"])
     parser.add_argument("--backward_function_1_init", "-bf1_init", type=str, default="orthogonal",
-                        choices=["orthogonal", "gaussian", "uniform"])
+                        choices=["orthogonal", "gaussian", "uniform",
+                                 "orthogonal-0", "orthogonal-1", "orthogonal-2", "orthogonal-3", "orthogonal-4",
+                                 "gaussian-0", "gaussian-1", "gaussian-1", "gaussian-2", "gaussian-3", "gaussian-4",
+                                 "uniform-0", "uniform-1", "uniform-2", "uniform-3", "uniform-4",
+                                 "eye-0", "eye-1", "eye-2", "eye-3", "eye-4",
+                                 "constant-0", "constant-1", "constant-2", "constant-3", "constant-4",
+                                 "rank-1", "rank-2", "rank-4", "rank-8"])
     parser.add_argument("--backward_function_2_init", "-bf2_init", type=str, default="orthogonal",
                         choices=["orthogonal", "gaussian", "uniform"])
 
