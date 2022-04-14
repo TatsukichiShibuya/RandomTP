@@ -37,6 +37,7 @@ def get_args():
 
     parser.add_argument("--learning_rate", "-lr", type=float, default=1e-3)
     parser.add_argument("--learning_rate_backward", "-lrb", type=float, default=1e-3)
+    parser.add_argument("--std_backward", "-sb", type=float, default=1e-2)
     parser.add_argument("--stepsize", type=float, default=1e-2)
 
     parser.add_argument("--label_augmentation", action="store_true")
@@ -157,7 +158,8 @@ def main(**kwargs):
         model = tp_net(kwargs["depth"], kwargs["direct_depth"], kwargs["in_dim"],
                        kwargs["hid_dim"], kwargs["out_dim"], loss_function, device, params=params)
         model.train(train_loader, valid_loader, kwargs["epochs"], kwargs["learning_rate"],
-                    kwargs["learning_rate_backward"], kwargs["stepsize"], kwargs["log"])
+                    kwargs["learning_rate_backward"], kwargs["std_backward"], kwargs["stepsize"],
+                    kwargs["log"])
 
     # test
     loss, acc = model.test(test_loader)

@@ -1,6 +1,8 @@
 from models.tp_layer import tp_layer
 from models.net import net
+from models.my_functions import parameterized_function
 from utils import calc_angle
+
 
 import sys
 import time
@@ -18,6 +20,7 @@ class tp_net(net):
         self.device = device
         self.MSELoss = nn.MSELoss(reduction="sum")
         self.layers = self.init_layers(in_dim, hid_dim, out_dim, params)
+        self.back_trainable = (params["bf1"]["type"] == "parameterized")
 
     def init_layers(self, in_dim, hid_dim, out_dim, params):
         layers = [None] * self.depth
@@ -32,7 +35,7 @@ class tp_net(net):
             y = self.layers[d].forward(y, update=update)
         return y
 
-    def train(self, train_loader, valid_loader, epochs, lr, lrb, stepsize, log, params=None):
+    def train(self, train_loader, valid_loader, epochs, lr, lrb, std, stepsize, log, params=None):
         # reconstruction loss
         rec_loss = self.reconstruction_loss_of_dataset(train_loader)
         print(f"Initial Rec Loss: {rec_loss} ", end="")
@@ -43,7 +46,7 @@ class tp_net(net):
             torch.cuda.empty_cache()
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
-                self.train_back_weights(x, y, lrb)
+                self.train_back_weights(x, y, lrb, std)
         rec_loss = self.reconstruction_loss_of_dataset(train_loader)
         print(f"> {rec_loss}")
 
@@ -54,12 +57,14 @@ class tp_net(net):
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
-                self.train_back_weights(x, y, lrb)
+                self.train_back_weights(x, y, lrb, std)
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
+                self.train_back_weights(x, y, lrb, std)
                 self.compute_target(x, y, stepsize)
                 self.update_weights(x, lr)
+
             """
             epsilon_l2_loss_sum = [torch.zeros(1) for d in range(self.depth)]
             epsilon_angle_loss_sum = [torch.zeros(1) for d in range(self.depth)]
@@ -128,11 +133,14 @@ class tp_net(net):
                     print(f"\tEta-l2-{d}         : {eta_l2_loss_sum[d].item()}")
                 """
 
-    def train_back_weights(self, x, y, lrb, loss_type="DTP"):
+    def train_back_weights(self, x, y, lrb, std, loss_type="DTP"):
+        if not self.back_trainable:
+            return
+
         self.forward(x)
         for d in reversed(range(1, self.depth - self.direct_depth + 1)):
             q = self.layers[d - 1].output.detach().clone()
-            q = q + torch.normal(0, 0.03, size=q.shape, device=self.device)
+            q = q + torch.normal(0, std, size=q.shape, device=self.device)
             q_upper = self.layers[d].forward(q)
             if loss_type == "Full":
                 raise NotImplementedError()
