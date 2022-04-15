@@ -2,7 +2,7 @@ from models.tp_layer import tp_layer
 from models.net import net
 from models.my_functions import parameterized_function
 from utils import calc_angle
-
+from copy import deepcopy
 
 import sys
 import time
@@ -25,8 +25,12 @@ class tp_net(net):
     def init_layers(self, in_dim, hid_dim, out_dim, params):
         layers = [None] * self.depth
         dims = [in_dim] + [hid_dim] * (self.depth - 1) + [out_dim]
-        for d in range(self.depth):
+        for d in range(self.depth - 1):
             layers[d] = tp_layer(dims[d], dims[d + 1], self.device, params)
+        params_last = deepcopy(params)
+        params_last["ff2"]["act"] = "linear"
+        layers[-1] = tp_layer(dims[-2], dims[-1], self.device, params_last)
+
         return layers
 
     def forward(self, x, update=True):
@@ -61,7 +65,8 @@ class tp_net(net):
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
-                self.train_back_weights(x, y, lrb, std)
+                for i in range(5):
+                    self.train_back_weights(x, y, lrb, std)
                 self.compute_target(x, y, stepsize)
                 self.update_weights(x, lr)
 
@@ -118,11 +123,9 @@ class tp_net(net):
                     print(f"\tTrain Acc        : {train_acc}")
                 if valid_acc is not None:
                     print(f"\tValid Acc        : {valid_acc}")
-                """
-                print(f"\tRec Loss         : {rec_loss}")
+                # print(f"\tRec Loss         : {rec_loss}")
                 for d in range(len(layerwise_rec_loss)):
                     print(f"\tRec Loss-{d+1}       : {layerwise_rec_loss[d]}")
-                """
                 """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     print(f"\tEpsilon-l2-{d}     : {epsilon_l2_loss_sum[d].item()}")
@@ -136,12 +139,10 @@ class tp_net(net):
 
         self.forward(x)
         for d in reversed(range(1, self.depth - self.direct_depth + 1)):
-            q = self.layers[d - 1].output.detach().clone()
-            q = q + torch.normal(0, std, size=q.shape, device=self.device)
-            q_upper = self.layers[d].forward(q)
-            if loss_type == "Full":
-                raise NotImplementedError()
-            elif loss_type == "DTP":
+            if loss_type == "DTP":
+                q = self.layers[d - 1].output.detach().clone()
+                q = q + torch.normal(0, std, size=q.shape, device=self.device)
+                q_upper = self.layers[d].forward(q)
                 h = self.layers[d].backward_function_1.forward(q_upper)
             elif loss_type == "DRL":
                 raise NotImplementedError()
@@ -152,7 +153,10 @@ class tp_net(net):
             loss = self.MSELoss(h, q)
             self.layers[d].zero_grad()
             loss.backward(retain_graph=True)
-            self.layers[d].update_backward(lrb / len(x))
+            if d == self.depth - self.direct_depth:
+                self.layers[d].update_backward(lrb / len(x))
+            else:
+                self.layers[d].update_backward(lrb / len(x))
 
     def compute_target(self, x, y, stepsize):
         y_pred = self.forward(x)
