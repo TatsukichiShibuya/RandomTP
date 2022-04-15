@@ -154,7 +154,7 @@ class tp_net(net):
             self.layers[d].zero_grad()
             loss.backward(retain_graph=True)
             if d == self.depth - self.direct_depth:
-                self.layers[d].update_backward(lrb / len(x))
+                self.layers[d].update_backward(lrb * 10 / len(x))
             else:
                 self.layers[d].update_backward(lrb / len(x))
 
