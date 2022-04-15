@@ -41,7 +41,7 @@ class tp_net(net):
         print(f"Initial Rec Loss: {rec_loss} ", end="")
 
         # train backward
-        for e in range(0):
+        for e in range(5):
             print("-", end="")
             torch.cuda.empty_cache()
             for x, y in train_loader:
@@ -88,10 +88,8 @@ class tp_net(net):
             with torch.no_grad():
                 train_loss, train_acc = self.test(train_loader)
                 valid_loss, valid_acc = self.test(valid_loader)
-                """
-                rec_loss = self.reconstruction_loss_of_dataset(train_loader)
+                # rec_loss = self.reconstruction_loss_of_dataset(train_loader)
                 layerwise_rec_loss = self.layerwise_reconstruction_loss_of_dataset(train_loader)
-                """
             # log
             if log:
                 log_dict = {}
@@ -101,11 +99,10 @@ class tp_net(net):
                     log_dict["train accuracy"] = train_acc
                 if valid_acc is not None:
                     log_dict["valid accuracy"] = valid_acc
-                """
-                log_dict["rec loss"] = rec_loss
+
+                # log_dict["rec loss"] = rec_loss
                 for d in range(len(layerwise_rec_loss)):
                     log_dict["rec loss " + str(d + 1)] = layerwise_rec_loss[d]
-                """
                 """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict[f"epsilon l2 {d}"] = epsilon_l2_loss_sum[d].item()
