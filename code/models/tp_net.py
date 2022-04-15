@@ -203,8 +203,8 @@ class tp_net(net):
         self.forward(x)
         for d in range(1, self.depth - self.direct_depth + 1):
             plane = self.layers[d].backward_function_1.forward(self.layers[d].output)
-            diff = self.layers[d].backward_function_2.forward(plane, self.layers[d - 1].output)
-            layerwise_rec_loss[d - 1] = self.MSELoss(self.layers[d - 1].output, diff)
+            # diff = self.layers[d].backward_function_2.forward(plane, self.layers[d - 1].output)
+            layerwise_rec_loss[d - 1] = self.MSELoss(self.layers[d - 1].output, plane)
         return layerwise_rec_loss
 
     def layerwise_reconstruction_loss_of_dataset(self, data_loader):
