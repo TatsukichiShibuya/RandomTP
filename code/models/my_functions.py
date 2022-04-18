@@ -97,8 +97,8 @@ class random_function(abstract_function):
             std = 10**(-int(params["init"][-1]))
             nn.init.normal_(self.weight, 0, std)
         elif "gaussian" in params["init"]:
-            range = 10**(-int(params["init"][-1]))
-            nn.init.uniform_(self.weight, -range, range)
+            range_val = 10**(-int(params["init"][-1]))
+            nn.init.uniform_(self.weight, -range_val, range_val)
         elif "eye" in params["init"]:
             scale = 10**(-int(params["init"][-1]))
             nn.init.eye_(self.weight)
@@ -110,6 +110,17 @@ class random_function(abstract_function):
             raise NotImplementedError()
         else:
             raise NotImplementedError()
+
+        if "sparse" in params["init"]:
+            sparse_matrix = torch.ones((out_dim, in_dim), device=device)
+            sparse_ratio = float(params["init"].split("-")[-1])
+            sparse_dim = int(in_dim * sparse_ratio)
+            zero_mask = (torch.randperm(in_dim) < sparse_dim)
+            for i in range(out_dim):
+                sparse_matrix[i][zero_mask] = 0
+                zero_mask = torch.cat([zero_mask[-1].reshape(1), zero_mask[:-1]])
+            self.weight = (self.weight * sparse_matrix).detach().requires_grad_()
+
         if params["act"] == "tanh":
             self.activation_function = nn.Tanh()
         elif params["act"] == "linear":

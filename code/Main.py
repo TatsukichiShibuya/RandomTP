@@ -65,6 +65,7 @@ def get_args():
                                  "eye-0", "eye-1", "eye-2", "eye-3", "eye-4",
                                  "constant-0", "constant-1", "constant-2", "constant-3", "constant-4",
                                  "rank-1", "rank-2", "rank-4", "rank-8"])
+    parser.add_argument("--sparse_ratio", "-sr", type=float, default=0)
     parser.add_argument("--backward_function_2_init", "-bf2_init", type=str, default="orthogonal",
                         choices=["orthogonal", "gaussian", "uniform"])
 
@@ -174,6 +175,9 @@ def set_params(kwargs):
             "bf1": "backward_function_1",
             "bf2": "backward_function_2"}
     params = {}
+    sparse_ratio = str(kwargs["sparse_ratio"]) if 1 > kwargs["sparse_ratio"] > 0 else ""
+    sparse_ratio = "-sparse-" + sparse_ratio
+
     if kwargs["algorithm"] == "DTP":
         params["ff1"] = {"type": "identity",
                          "init": None,
@@ -208,7 +212,7 @@ def set_params(kwargs):
                          "init": kwargs[name["ff2"] + "_init"],
                          "act": "tanh"}
         params["bf1"] = {"type": "random",
-                         "init": kwargs[name["bf1"] + "_init"],
+                         "init": kwargs[name["bf1"] + "_init"] + sparse_ratio,
                          "act": "tanh"}
         params["bf2"] = {"type": "difference",
                          "init": None,
@@ -221,7 +225,7 @@ def set_params(kwargs):
                          "init": kwargs[name["ff2"] + "_init"],
                          "act": "tanh-BN"}
         params["bf1"] = {"type": "random",
-                         "init": kwargs[name["bf1"] + "_init"],
+                         "init": kwargs[name["bf1"] + "_init"] + sparse_ratio,
                          "act": "tanh-BN"}
         params["bf2"] = {"type": "difference",
                          "init": None,
@@ -252,7 +256,6 @@ def set_params(kwargs):
         params["bf2"] = {"type": "difference",
                          "init": None,
                          "act": "linear-BN"}
-
     return params
 
 
