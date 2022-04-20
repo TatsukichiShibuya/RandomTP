@@ -175,8 +175,8 @@ def set_params(kwargs):
             "bf1": "backward_function_1",
             "bf2": "backward_function_2"}
     params = {}
-    sparse_ratio = str(kwargs["sparse_ratio"]) if 1 > kwargs["sparse_ratio"] > 0 else ""
-    sparse_ratio = "-sparse-" + sparse_ratio
+    sparse_ratio = ("-sparse-" + str(kwargs["sparse_ratio"])
+                    ) if 1 > kwargs["sparse_ratio"] > 0 else ""
 
     if kwargs["algorithm"] == "DTP":
         params["ff1"] = {"type": "identity",
