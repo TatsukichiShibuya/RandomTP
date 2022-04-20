@@ -64,8 +64,8 @@ class tp_net(net):
                 x, y = x.to(self.device), y.to(self.device)
                 self.train_back_weights(x, y, lrb, std)
 
-            forward_loss_sum = [torch.zeros(1) for d in range(self.depth)]
-            target_rec_sum = [torch.zeros(1) for d in range(self.depth)]
+            forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
+            target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
