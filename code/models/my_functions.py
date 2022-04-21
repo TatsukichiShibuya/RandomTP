@@ -90,21 +90,21 @@ class random_function(abstract_function):
         elif params["init"] == "orthogonal":
             nn.init.orthogonal_(self.weight)
         elif "orthogonal" in params["init"]:
-            scale = 10**(-int(params["init"][-1]))
+            scale = 10**(-float(params["init"].split("-")[1]))
             nn.init.orthogonal_(self.weight)
             self.weight *= scale
         elif "uniform" in params["init"]:
-            std = 10**(-int(params["init"][-1]))
+            std = 10**(-float(params["init"].split("-")[1]))
             nn.init.normal_(self.weight, 0, std)
         elif "gaussian" in params["init"]:
-            range_val = 10**(-int(params["init"][-1]))
+            range_val = 10**(-float(params["init"].split("-")[1]))
             nn.init.uniform_(self.weight, -range_val, range_val)
         elif "eye" in params["init"]:
-            scale = 10**(-int(params["init"][-1]))
+            scale = 10**(-float(params["init"].split("-")[1]))
             nn.init.eye_(self.weight)
             self.weight *= scale
         elif "constant" in params["init"]:
-            scale = 10**(-int(params["init"][-1]))
+            scale = 10**(-float(params["init"].split("-")[1]))
             nn.init.constant_(self.weight, scale)
         elif "rank" in params["init"]:
             raise NotImplementedError()

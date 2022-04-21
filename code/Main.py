@@ -65,7 +65,7 @@ def get_args():
                                  "eye-0", "eye-1", "eye-2", "eye-3", "eye-4",
                                  "constant-0", "constant-1", "constant-2", "constant-3", "constant-4",
                                  "rank-1", "rank-2", "rank-4", "rank-8"])
-    parser.add_argument("--sparse_ratio", "-sr", type=float, default=0)
+    parser.add_argument("--sparse_ratio", "-sr", type=float, default=-1)
     parser.add_argument("--backward_function_2_init", "-bf2_init", type=str, default="orthogonal",
                         choices=["orthogonal", "gaussian", "uniform"])
 
@@ -176,7 +176,7 @@ def set_params(kwargs):
             "bf2": "backward_function_2"}
     params = {}
     sparse_ratio = ("-sparse-" + str(kwargs["sparse_ratio"])
-                    ) if 1 > kwargs["sparse_ratio"] > 0 else ""
+                    ) if 1 >= kwargs["sparse_ratio"] >= 0 else ""
 
     if kwargs["algorithm"] == "DTP":
         params["ff1"] = {"type": "identity",
