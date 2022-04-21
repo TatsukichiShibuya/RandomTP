@@ -54,7 +54,7 @@ def batch_normalization(x, mean=None, std=None):
         mean = torch.mean(x, dim=0)
     if std is None:
         std = torch.std(x, dim=0)
-    return (x - mean) / std
+    return (x - mean) / (std + 1e-12)
 
 
 def batch_normalization_inverse(y, mean, std):
