@@ -63,9 +63,10 @@ class tp_net(net):
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
                 self.train_back_weights(x, y, lrb, std)
-
+            """
             forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
+            """
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
@@ -73,7 +74,7 @@ class tp_net(net):
                     self.train_back_weights(x, y, lrb, std)
                 self.compute_target(x, y, stepsize)
                 self.update_weights(x, lr)
-
+                """
                 with torch.no_grad():
                     for d in range(self.depth):
                         norm = torch.norm(self.layers[d].output - self.layers[d].target, dim=1)**2
@@ -88,6 +89,7 @@ class tp_net(net):
             for d in range(self.depth):
                 forward_loss_sum[d] /= len(train_loader.dataset)
                 target_rec_sum[d] /= len(train_loader.dataset)
+            """
             """
             epsilon_l2_loss_sum = [torch.zeros(1) for d in range(self.depth)]
             epsilon_angle_loss_sum = [torch.zeros(1) for d in range(self.depth)]
@@ -126,11 +128,12 @@ class tp_net(net):
                 # log_dict["rec loss"] = rec_loss
                 for d in range(len(layerwise_rec_loss)):
                     log_dict["rec loss " + str(d + 1)] = layerwise_rec_loss[d]
-
+                """
                 for d in range(self.depth):
                     log_dict["forward loss " + str(d)] = forward_loss_sum[d]
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict["target rec loss " + str(d)] = target_rec_sum[d]
+                """
                 """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict[f"epsilon l2 {d}"] = epsilon_l2_loss_sum[d].item()
@@ -149,12 +152,12 @@ class tp_net(net):
                 # print(f"\tRec Loss         : {rec_loss}")
                 for d in range(len(layerwise_rec_loss)):
                     print(f"\tRec Loss-{d+1}       : {layerwise_rec_loss[d]}")
-
+                """
                 for d in range(self.depth):
                     print(f"\tForward Loss-{d}     : {forward_loss_sum[d].item()}")
                 for d in range(1, self.depth - self.direct_depth + 1):
                     print(f"\tTarget Rec Loss-{d}  : {target_rec_sum[d].item()}")
-
+                """
                 """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     print(f"\tEpsilon-l2-{d}     : {epsilon_l2_loss_sum[d].item()}")
