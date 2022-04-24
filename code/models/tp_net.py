@@ -10,6 +10,7 @@ import wandb
 import numpy as np
 import torch
 from torch import nn
+from torch.autograd.functional import jacobian
 
 
 class tp_net(net):
@@ -56,25 +57,39 @@ class tp_net(net):
         print(f"> {rec_loss}")
 
         # train forward
-        for e in range(epochs):
+        for e in range(epochs + 1):
             print(f"Epoch {e}")
             torch.cuda.empty_cache()
 
-            for x, y in train_loader:
-                x, y = x.to(self.device), y.to(self.device)
-                self.train_back_weights(x, y, lrb, std)
+            if e > 0:
+                for x, y in train_loader:
+                    x, y = x.to(self.device), y.to(self.device)
+                    self.train_back_weights(x, y, lrb, std)
             """
             forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             """
+            eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
-                for i in range(5):
-                    self.train_back_weights(x, y, lrb, std)
-                self.compute_target(x, y, stepsize)
-                self.update_weights(x, lr)
-                """
+                if e > 0:
+                    for i in range(5):
+                        self.train_back_weights(x, y, lrb, std)
+                    self.compute_target(x, y, stepsize)
+                    self.update_weights(x, lr)
+
+                with torch.no_grad():
+                    self.forward(x)
+                    for d in range(1, self.depth - self.direct_depth + 1):
+                        h1 = self.layers[d].input[0]
+                        gradf = jacobian(self.layers[d].forward, h1)
+                        h2 = self.layers[d].forward(h1)
+                        gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
+                        eigenvalues_sum[d] += torch.linalg.eig(gradf @ gradg).eigenvalues.sum().real
+            for d in range(self.depth):
+                eigenvalues_sum[d] /= len(train_loader)
+            """
                 with torch.no_grad():
                     for d in range(self.depth):
                         norm = torch.norm(self.layers[d].output - self.layers[d].target, dim=1)**2
@@ -113,7 +128,6 @@ class tp_net(net):
             with torch.no_grad():
                 train_loss, train_acc = self.test(train_loader)
                 valid_loss, valid_acc = self.test(valid_loader)
-                # rec_loss = self.reconstruction_loss_of_dataset(train_loader)
                 layerwise_rec_loss = self.layerwise_reconstruction_loss_of_dataset(train_loader)
             # log
             if log:
@@ -125,7 +139,6 @@ class tp_net(net):
                 if valid_acc is not None:
                     log_dict["valid accuracy"] = valid_acc
 
-                # log_dict["rec loss"] = rec_loss
                 for d in range(len(layerwise_rec_loss)):
                     log_dict["rec loss " + str(d + 1)] = layerwise_rec_loss[d]
                 """
@@ -140,6 +153,8 @@ class tp_net(net):
                     log_dict[f"epsilon angle {d}"] = epsilon_angle_loss_sum[d].item()
                     log_dict[f"eta l2 {d}"] = eta_l2_loss_sum[d].item()
                 """
+                for d in range(1, self.depth - self.direct_depth + 1):
+                    log_dict[f"eigenvalue sum {d}"] = eigenvalues_sum[d].item()
 
                 wandb.log(log_dict)
             else:
@@ -164,6 +179,8 @@ class tp_net(net):
                     print(f"\tEpsilon-angle-{d}  : {epsilon_angle_loss_sum[d].item()}")
                     print(f"\tEta-l2-{d}         : {eta_l2_loss_sum[d].item()}")
                 """
+                for d in range(1, self.depth - self.direct_depth + 1):
+                    print(f"\teigenvalue sum-{d}: {eigenvalues_sum[d].item()}")
 
     def train_back_weights(self, x, y, lrb, std, loss_type="DTP"):
         if not self.back_trainable:
