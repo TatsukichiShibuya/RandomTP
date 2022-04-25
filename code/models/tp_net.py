@@ -28,7 +28,7 @@ class tp_net(net):
         dims = [in_dim] + [hid_dim] * (self.depth - 1) + [out_dim]
         for d in range(self.depth - 1):
             layers[d] = tp_layer(dims[d], dims[d + 1], self.device, params)
-            print(d, torch.linalg.matrix_rank(layers[d].backward_function_1.weight))
+            # print(d, torch.linalg.matrix_rank(layers[d].backward_function_1.weight))
         params_last = deepcopy(params)
         params_last["ff2"]["act"] = "linear"
         layers[-1] = tp_layer(dims[-2], dims[-1], self.device, params_last)
@@ -56,6 +56,10 @@ class tp_net(net):
         rec_loss = self.reconstruction_loss_of_dataset(train_loader)
         print(f"> {rec_loss}")
 
+        fixed_input = [None] * self.depth
+        for d in range(1, self.depth - self.direct_depth + 1):
+            fixed_input[d] = torch.normal(10, 1, (5, self.layers[d].in_dim))
+
         # train forward
         for e in range(epochs + 1):
             print(f"Epoch {e}")
@@ -65,10 +69,9 @@ class tp_net(net):
                 for x, y in train_loader:
                     x, y = x.to(self.device), y.to(self.device)
                     self.train_back_weights(x, y, lrb, std)
-            """
-            forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            """
+
+            # forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
+            # target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
 
             for x, y in train_loader:
@@ -86,9 +89,21 @@ class tp_net(net):
                         gradf = jacobian(self.layers[d].forward, h1)
                         h2 = self.layers[d].forward(h1)
                         gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
-                        eigenvalues_sum[d] += torch.linalg.eig(gradf @ gradg).eigenvalues.sum().real
+                        eigenvalues_sum[d] += torch.trace(gradf @ gradg)
             for d in range(self.depth):
                 eigenvalues_sum[d] /= len(train_loader)
+            """
+            with torch.no_grad():
+                for d in range(1, self.depth - self.direct_depth + 1):
+                    for i in range(5):
+                        h1 = fixed_input[d][i]
+                        gradf = jacobian(self.layers[d].forward, h1)
+                        h2 = self.layers[d].forward(h1)
+                        gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
+                        eigenvalues_sum[d] += torch.trace(gradf @ gradg)
+                for d in range(self.depth):
+                    eigenvalues_sum[d] /= 5
+            """
             """
                 with torch.no_grad():
                     for d in range(self.depth):
@@ -100,28 +115,9 @@ class tp_net(net):
                                          dim=1)**2
                         rec /= (torch.norm(self.layers[d].target, dim=1)**2 + 1e-12)
                         target_rec_sum[d] += rec.sum()
-
             for d in range(self.depth):
                 forward_loss_sum[d] /= len(train_loader.dataset)
                 target_rec_sum[d] /= len(train_loader.dataset)
-            """
-            """
-            epsilon_l2_loss_sum = [torch.zeros(1) for d in range(self.depth)]
-            epsilon_angle_loss_sum = [torch.zeros(1) for d in range(self.depth)]
-            eta_l2_loss_sum = [torch.zeros(1) for d in range(self.depth)]
-            with torch.no_grad():
-                for x, y in train_loader:
-                    x, y = x.to(self.device), y.to(self.device)
-                    epsilon_l2_loss, epsilon_angle_loss = self.compute_epsilon_loss(x)
-                    eta_l2_loss = self.compute_eta_loss(x)
-                    for d in range(self.depth):
-                        epsilon_l2_loss_sum[d] += epsilon_l2_loss[d].sum()
-                        epsilon_angle_loss_sum[d] += epsilon_angle_loss[d].sum()
-                        eta_l2_loss_sum[d] += eta_l2_loss[d].sum()
-                for d in range(self.depth):
-                    epsilon_l2_loss_sum[d] /= len(train_loader.dataset)
-                    epsilon_angle_loss_sum[d] /= len(train_loader.dataset)
-                    eta_l2_loss_sum[d] /= len(train_loader.dataset)
             """
 
             # predict
@@ -147,12 +143,6 @@ class tp_net(net):
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict["target rec loss " + str(d)] = target_rec_sum[d]
                 """
-                """
-                for d in range(1, self.depth - self.direct_depth + 1):
-                    log_dict[f"epsilon l2 {d}"] = epsilon_l2_loss_sum[d].item()
-                    log_dict[f"epsilon angle {d}"] = epsilon_angle_loss_sum[d].item()
-                    log_dict[f"eta l2 {d}"] = eta_l2_loss_sum[d].item()
-                """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict[f"eigenvalue sum {d}"] = eigenvalues_sum[d].item()
 
@@ -173,12 +163,6 @@ class tp_net(net):
                 for d in range(1, self.depth - self.direct_depth + 1):
                     print(f"\tTarget Rec Loss-{d}  : {target_rec_sum[d].item()}")
                 """
-                """
-                for d in range(1, self.depth - self.direct_depth + 1):
-                    print(f"\tEpsilon-l2-{d}     : {epsilon_l2_loss_sum[d].item()}")
-                    print(f"\tEpsilon-angle-{d}  : {epsilon_angle_loss_sum[d].item()}")
-                    print(f"\tEta-l2-{d}         : {eta_l2_loss_sum[d].item()}")
-                """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     print(f"\teigenvalue sum-{d}: {eigenvalues_sum[d].item()}")
 
@@ -196,7 +180,10 @@ class tp_net(net):
             elif loss_type == "DRL":
                 raise NotImplementedError()
             elif loss_type == "L-DRL":
-                raise NotImplementedError()
+                q = self.layers[d - 1].output.detach().clone()
+                q = q + torch.normal(0, std, size=q.shape, device=self.device)
+                q_upper = self.layers[d].forward(q)
+                h = self.layers[d].backward_function_1.forward(q_upper)
             else:
                 raise NotImplementedError()
             loss = self.MSELoss(h, q)
@@ -269,29 +256,3 @@ class tp_net(net):
             print("ERROR: rec loss diverged")
             sys.exit(1)
         return layerwise_rec_loss / len(data_loader.dataset)
-
-    def compute_epsilon_loss(self, x):
-        l2_loss = [torch.zeros(1) for d in range(self.depth)]
-        angle_loss = [torch.zeros(1) for d in range(self.depth)]
-        self.forward(x)
-        for d in range(1, self.depth - self.direct_depth + 1):
-            h = self.layers[d - 1].output.detach().clone()
-            h_e = h + torch.normal(0, 0.03, size=h.shape, device=self.device)
-            h_e_next = self.layers[d].forward(h_e, update=False)
-            h_e_rec = self.layers[d].backward_function_1.forward(h_e_next)
-            h_e_rec = self.layers[d].backward_function_2.forward(h_e_rec, h)
-            l2_loss[d] = torch.norm(h_e - h_e_rec, dim=1)
-            angle_loss[d] = calc_angle(h_e - h, h_e_rec - h)
-        return l2_loss, angle_loss
-
-    def compute_eta_loss(self, x):
-        l2_loss = [torch.zeros(1) for d in range(self.depth)]
-        self.forward(x)
-        for d in range(1, self.depth - self.direct_depth + 1):
-            h = self.layers[d - 1].output.detach().clone()
-            h_next = self.layers[d].forward(h, update=False)
-            h_next_e = h_next + torch.normal(0, 0.03, size=h_next.shape, device=self.device)
-            h_e_rec = self.layers[d].backward_function_1.forward(h_next_e)
-            h_e_rec = self.layers[d].backward_function_2.forward(h_e_rec, h)
-            l2_loss[d] = torch.norm(h - h_e_rec, dim=1)
-        return l2_loss
