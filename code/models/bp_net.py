@@ -9,14 +9,11 @@ from torch import nn
 
 
 class bp_net(net):
-    def __init__(self, **kwargs):
-        self.device = kwargs["device"]
-        self.depth = kwargs["depth"]
-        self.layers = self.init_layers(kwargs["in_dim"],
-                                       kwargs["hid_dim"],
-                                       kwargs["out_dim"],
-                                       kwargs["activation_function"])
-        self.loss_function = kwargs["loss_function"]
+    def __init__(self, depth, in_dim, hid_dim, out_dim, activation_function, loss_function, device):
+        self.device = device
+        self.depth = depth
+        self.layers = self.init_layers(in_dim, hid_dim, out_dim, activation_function)
+        self.loss_function = loss_function
         self.MSELoss = nn.MSELoss(reduction="sum")
 
     def init_layers(self, in_dim, hid_dim, out_dim, activation_function):
@@ -60,6 +57,7 @@ class bp_net(net):
                     if valid_acc is not None:
                         print(f"\tvalid acc      : {valid_acc}")
 
+    """
     def update_weights(self, x, y, lr):
         y_pred = self.forward(x)
         loss = self.loss_function(y_pred, y)
@@ -69,8 +67,8 @@ class bp_net(net):
         for d in range(self.depth):
             self.layers[d].weight = (self.layers[d].weight - (lr / batch_size)
                                      * self.layers[d].weight.grad).detach().requires_grad_()
-
     """
+
     def update_weights(self, x, y, lr):
         y_pred = self.forward(x).requires_grad_()
         y_pred.retain_grad()
@@ -88,7 +86,6 @@ class bp_net(net):
         for d in range(self.depth):
             self.layers[d].weight = (self.layers[d].weight - (lr / batch_size)
                                      * grad[d]).detach().requires_grad_()
-    """
 
     def zero_grad(self):
         for d in range(self.depth):

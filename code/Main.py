@@ -13,7 +13,7 @@ import numpy as np
 from torch import nn
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-BP_LIST = []
+BP_LIST = ["BP", "FA", "sFA"]
 TP_LIST = ["TP", "DTP", "DTP-BN", "RTP", "RTP-BN", "ITP", "ITP-BN"]
 
 
@@ -89,16 +89,17 @@ def get_args():
 def main(**kwargs):
     set_seed(kwargs["seed"])
     device = set_device()
-    params = set_params(kwargs)
+    print(f"DEVICE: {device}")
+    if kwargs["algorithm"] in TP_LIST:
+        params = set_params(kwargs)
+        print("Forward  : ", end="")
+        print(f"{params['ff1']['type']}({params['ff1']['act']},{params['ff1']['init']})", end="")
+        print(f" -> {params['ff2']['type']}({params['ff2']['act']},{params['ff2']['init']})")
+        print("Backward : ", end="")
+        print(f"{params['bf1']['type']}({params['bf1']['act']},{params['bf1']['init']})", end="")
+        print(f" -> {params['bf2']['type']}({params['bf2']['act']},{params['bf2']['init']})")
     if kwargs["log"]:
         set_wandb(kwargs, params)
-    print(f"DEVICE: {device}")
-    print("Forward  : ", end="")
-    print(f"{params['ff1']['type']}({params['ff1']['act']},{params['ff1']['init']})", end="")
-    print(f" -> {params['ff2']['type']}({params['ff2']['act']},{params['ff2']['init']})")
-    print("Backward : ", end="")
-    print(f"{params['bf1']['type']}({params['bf1']['act']},{params['bf1']['init']})", end="")
-    print(f" -> {params['bf2']['type']}({params['bf2']['act']},{params['bf2']['init']})")
 
     if kwargs["dataset"] == "MNIST":
         num_classes = 10
@@ -146,13 +147,9 @@ def main(**kwargs):
 
     # initialize model
     if kwargs["algorithm"] in BP_LIST:
-        model = bp_net(depth=kwargs["depth"],
-                       in_dim=kwargs["in_dim"],
-                       out_dim=kwargs["out_dim"],
-                       hid_dim=kwargs["hid_dim"],
-                       activation_function=kwargs["activation_function"],
-                       loss_function=loss_function,
-                       device=device)
+        model = bp_net(kwargs["depth"], kwargs["in_dim"], kwargs["hid_dim"],
+                       kwargs["out_dim"], kwargs["forward_function_1_activation"],
+                       loss_function, device)
         model.train(train_loader, valid_loader, kwargs["epochs"], kwargs["learning_rate"],
                     kwargs["log"])
     elif kwargs["algorithm"] in TP_LIST:
