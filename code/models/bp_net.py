@@ -19,8 +19,9 @@ class bp_net(net):
     def init_layers(self, in_dim, hid_dim, out_dim, activation_function):
         layers = [None] * self.depth
         dims = [in_dim] + [hid_dim] * (self.depth - 1) + [out_dim]
-        for d in range(self.depth):
+        for d in range(self.depth - 1):
             layers[d] = bp_layer(dims[d], dims[d + 1], activation_function, self.device)
+        layers[-1] = bp_layer(dims[-2], dims[-1], "linear", self.device)
         return layers
 
     def train(self, train_loader, valid_loader, epochs, lr, log):
