@@ -98,8 +98,15 @@ def main(**kwargs):
         print("Backward : ", end="")
         print(f"{params['bf1']['type']}({params['bf1']['act']},{params['bf1']['init']})", end="")
         print(f" -> {params['bf2']['type']}({params['bf2']['act']},{params['bf2']['init']})")
-    if kwargs["log"]:
-        set_wandb(kwargs, params)
+        if kwargs["log"]:
+            set_wandb(kwargs, params)
+    elif kwargs["algorithm"] in BP_LIST:
+        print("Forward  : ", end="")
+        print(f"{kwargs['forward_function_2_activation']}, orthogonal")
+        if kwargs["log"]:
+            config = kwargs.copy()
+            config["activation_function"] = kwargs['forward_function_2_activation']
+            wandb.init(config=config)
 
     if kwargs["dataset"] == "MNIST":
         num_classes = 10
@@ -148,7 +155,7 @@ def main(**kwargs):
     # initialize model
     if kwargs["algorithm"] in BP_LIST:
         model = bp_net(kwargs["depth"], kwargs["in_dim"], kwargs["hid_dim"],
-                       kwargs["out_dim"], kwargs["forward_function_1_activation"],
+                       kwargs["out_dim"], kwargs["forward_function_2_activation"],
                        loss_function, device)
         model.train(train_loader, valid_loader, kwargs["epochs"], kwargs["learning_rate"],
                     kwargs["log"])
