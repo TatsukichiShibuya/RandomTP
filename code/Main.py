@@ -14,7 +14,7 @@ from torch import nn
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 BP_LIST = []
-TP_LIST = ["DTP", "DTP-BN", "RTP", "RTP-BN", "ITP", "ITP-BN"]
+TP_LIST = ["TP", "DTP", "DTP-BN", "RTP", "RTP-BN", "ITP", "ITP-BN"]
 
 
 def get_args():
@@ -178,7 +178,20 @@ def set_params(kwargs):
     sparse_ratio = ("-sparse-" + str(kwargs["sparse_ratio"])
                     ) if 1 >= kwargs["sparse_ratio"] >= 0 else ""
 
-    if kwargs["algorithm"] == "DTP":
+    if kwargs["algorithm"] == "TP":
+        params["ff1"] = {"type": "identity",
+                         "init": None,
+                         "act": "linear"}
+        params["ff2"] = {"type": "parameterized",
+                         "init": kwargs[name["ff2"] + "_init"],
+                         "act": "tanh"}
+        params["bf1"] = {"type": "parameterized",
+                         "init": kwargs[name["bf1"] + "_init"],
+                         "act": "tanh"}
+        params["bf2"] = {"type": "identity",
+                         "init": None,
+                         "act": "linear"}
+    elif kwargs["algorithm"] == "DTP":
         params["ff1"] = {"type": "identity",
                          "init": None,
                          "act": "linear"}

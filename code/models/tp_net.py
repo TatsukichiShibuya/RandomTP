@@ -72,7 +72,7 @@ class tp_net(net):
 
             # forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             # target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
+            # eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
@@ -81,7 +81,7 @@ class tp_net(net):
                         self.train_back_weights(x, y, lrb, std)
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
-
+                """
                 with torch.no_grad():
                     self.forward(x)
                     for d in range(1, self.depth - self.direct_depth + 1):
@@ -92,6 +92,8 @@ class tp_net(net):
                         eigenvalues_sum[d] += torch.trace(gradf @ gradg)
             for d in range(self.depth):
                 eigenvalues_sum[d] /= len(train_loader)
+            print(torch.norm(gradf.T - gradg))
+            """
             """
             with torch.no_grad():
                 for d in range(1, self.depth - self.direct_depth + 1):
@@ -142,9 +144,9 @@ class tp_net(net):
                     log_dict["forward loss " + str(d)] = forward_loss_sum[d]
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict["target rec loss " + str(d)] = target_rec_sum[d]
-                """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict[f"eigenvalue sum {d}"] = eigenvalues_sum[d].item()
+                """
 
                 wandb.log(log_dict)
             else:
@@ -162,9 +164,9 @@ class tp_net(net):
                     print(f"\tForward Loss-{d}     : {forward_loss_sum[d].item()}")
                 for d in range(1, self.depth - self.direct_depth + 1):
                     print(f"\tTarget Rec Loss-{d}  : {target_rec_sum[d].item()}")
-                """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     print(f"\teigenvalue sum-{d}: {eigenvalues_sum[d].item()}")
+                """
 
     def train_back_weights(self, x, y, lrb, std, loss_type="DTP"):
         if not self.back_trainable:
@@ -177,16 +179,24 @@ class tp_net(net):
                 q = q + torch.normal(0, std, size=q.shape, device=self.device)
                 q_upper = self.layers[d].forward(q)
                 h = self.layers[d].backward_function_1.forward(q_upper)
+                loss = self.MSELoss(h, q)
             elif loss_type == "DRL":
                 raise NotImplementedError()
             elif loss_type == "L-DRL":
-                q = self.layers[d - 1].output.detach().clone()
-                q = q + torch.normal(0, std, size=q.shape, device=self.device)
-                q_upper = self.layers[d].forward(q)
-                h = self.layers[d].backward_function_1.forward(q_upper)
+                h = self.layers[d - 1].output.detach().clone()
+                q = h + torch.normal(0, std, size=h.shape, device=self.device)
+                q_up = self.layers[d].forward(q)
+                _q_up = self.layers[d].backward_function_1.forward(q_up)
+                q_rec = self.layers[d].backward_function_2.forward(_q_up, h)
+
+                h_up = self.layers[d].forward(h)
+                r_up = h_up + torch.normal(0, std, size=h_up.shape, device=self.device)
+                _r_up = self.layers[d].backward_function_1.forward(r_up)
+                r_rec = self.layers[d].backward_function_2.forward(_r_up, h)
+
+                loss = -((q - h) * (q_rec - h)).sum() + self.MSELoss(r_rec, h) / 2
             else:
                 raise NotImplementedError()
-            loss = self.MSELoss(h, q)
             self.layers[d].zero_grad()
             loss.backward(retain_graph=True)
             if d == self.depth - self.direct_depth:
