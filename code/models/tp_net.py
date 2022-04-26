@@ -52,7 +52,7 @@ class tp_net(net):
             torch.cuda.empty_cache()
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
-                self.train_back_weights(x, y, lrb, std)
+                self.train_back_weights(x, y, lrb, std, loss_type=params["loss_backward"])
         rec_loss = self.reconstruction_loss_of_dataset(train_loader)
         print(f"> {rec_loss}")
 
@@ -68,7 +68,7 @@ class tp_net(net):
             if e > 0:
                 for x, y in train_loader:
                     x, y = x.to(self.device), y.to(self.device)
-                    self.train_back_weights(x, y, lrb, std)
+                    self.train_back_weights(x, y, lrb, std, loss_type=params["loss_backward"])
 
             # forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             # target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
@@ -77,8 +77,8 @@ class tp_net(net):
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
                 if e > 0:
-                    for i in range(5):
-                        self.train_back_weights(x, y, lrb, std)
+                    for i in range(params["epochs_backward"]):
+                        self.train_back_weights(x, y, lrb, std, loss_type=params["loss_backward"])
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
                 """
@@ -168,7 +168,7 @@ class tp_net(net):
                     print(f"\teigenvalue sum-{d}: {eigenvalues_sum[d].item()}")
                 """
 
-    def train_back_weights(self, x, y, lrb, std, loss_type="DTP"):
+    def train_back_weights(self, x, y, lrb, std, loss_type="L-DRL"):
         if not self.back_trainable:
             return
 

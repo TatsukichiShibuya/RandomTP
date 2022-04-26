@@ -78,6 +78,10 @@ def get_args():
     parser.add_argument("--backward_function_2_activation", "-bf2_act", type=str, default="linear",
                         choices=["tanh", "linear", "tanh-BN", "linear-BN"])
 
+    parser.add_argument("--loss_backward", type=str, default="DTP",
+                        choices=["DTP", "DRL", "L-DRL"])
+    parser.add_argument("--epochs_backward", type=int, default=5)
+
     # wandb
     parser.add_argument("--log", action="store_true")
     parser.add_argument("--agent", action="store_true")
@@ -164,7 +168,7 @@ def main(**kwargs):
                        kwargs["hid_dim"], kwargs["out_dim"], loss_function, device, params=params)
         model.train(train_loader, valid_loader, kwargs["epochs"], kwargs["learning_rate"],
                     kwargs["learning_rate_backward"], kwargs["std_backward"], kwargs["stepsize"],
-                    kwargs["log"])
+                    kwargs["log"], {"loss_backward": kwargs["loss_backward"], "epochs_backward": kwargs["epochs_backward"]})
 
     # test
     loss, acc = model.test(test_loader)
