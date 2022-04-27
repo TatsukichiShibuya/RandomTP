@@ -64,7 +64,7 @@ class tp_net(net):
         for e in range(epochs + 1):
             print(f"Epoch {e}")
             torch.cuda.empty_cache()
-
+            start_time = time.time()
             if e > 0:
                 for x, y in train_loader:
                     x, y = x.to(self.device), y.to(self.device)
@@ -121,6 +121,7 @@ class tp_net(net):
                 forward_loss_sum[d] /= len(train_loader.dataset)
                 target_rec_sum[d] /= len(train_loader.dataset)
             """
+            end_time = time.time()
 
             # predict
             with torch.no_grad():
@@ -136,6 +137,7 @@ class tp_net(net):
                     log_dict["train accuracy"] = train_acc
                 if valid_acc is not None:
                     log_dict["valid accuracy"] = valid_acc
+                log_dict["time"] = end_time - start_time
 
                 for d in range(len(layerwise_rec_loss)):
                     log_dict["rec loss " + str(d + 1)] = layerwise_rec_loss[d]
