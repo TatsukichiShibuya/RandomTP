@@ -30,7 +30,7 @@ class tp_net(net):
             layers[d] = tp_layer(dims[d], dims[d + 1], self.device, params)
             # print(d, torch.linalg.matrix_rank(layers[d].backward_function_1.weight))
         params_last = deepcopy(params)
-        params_last["ff2"]["act"] = "linear"
+        params_last["ff2"]["act"] = params["last"]
         layers[-1] = tp_layer(dims[-2], dims[-1], self.device, params_last)
 
         return layers

@@ -106,6 +106,8 @@ class random_function(abstract_function):
         elif "constant" in params["init"]:
             scale = 10**(-float(params["init"].split("-")[1]))
             nn.init.constant_(self.weight, scale)
+        elif "same" in params["init"]:
+            nn.init.normal_(self.weight, 0, 5e-2)
         elif "rank" in params["init"]:
             raise NotImplementedError()
         else:

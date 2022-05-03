@@ -71,6 +71,7 @@ def set_wandb(args, params):
         config[name[n]] = params[n]["type"]
         config[name[n] + "_init"] = params[n]["init"]
         config[name[n] + "_activation"] = params[n]["act"]
+    config["last_activation"] = params["last"]
     wandb.init(config=config)
 
 
