@@ -93,10 +93,10 @@ class random_function(abstract_function):
             scale = 10**(-float(params["init"].split("-")[1]))
             nn.init.orthogonal_(self.weight)
             self.weight *= scale
-        elif "uniform" in params["init"]:
+        elif "gaussian" in params["init"]:
             std = 10**(-float(params["init"].split("-")[1]))
             nn.init.normal_(self.weight, 0, std)
-        elif "gaussian" in params["init"]:
+        elif "uniform" in params["init"]:
             range_val = 10**(-float(params["init"].split("-")[1]))
             nn.init.uniform_(self.weight, -range_val, range_val)
         elif "eye" in params["init"]:

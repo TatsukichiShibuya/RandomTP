@@ -12,7 +12,7 @@ class bp_layer:
         nn.init.orthogonal_(self.weight)
 
         self.fixed_weight = torch.empty(out_dim, in_dim, device=device)
-        nn.init.uniform_(self.fixed_weight, -1e-3, 1e-3)
+        nn.init.normal_(self.fixed_weight, self.weight.mean().item(), self.weight.std().item())
 
         # functions
         if activation_function == "linear":
