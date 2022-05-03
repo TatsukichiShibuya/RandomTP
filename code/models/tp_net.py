@@ -183,7 +183,17 @@ class tp_net(net):
                 h = self.layers[d].backward_function_1.forward(q_upper)
                 loss = self.MSELoss(h, q)
             elif loss_type == "DRL":
-                raise NotImplementedError()
+                h = self.layers[d - 1].output.detach().clone()
+                q = h + torch.normal(0, std, size=h.shape, device=self.device)
+                for _d in range(d, self.depth - self.direct_depth + 1):
+                    q = self.layers[_d].forward(q)
+                for _d in range(d, self.depth - self.direct_depth + 1):
+                    h = self.layers[_d].forward(h)
+                for _d in reversed(range(d, self.depth - self.direct_depth + 1)):
+                    q = self.layers[_d].backward_function_1.forward(q)
+                    q = self.layers[_d].backward_function_2.forward(q, self.layers[_d - 1].output)
+                loss = self.MSELoss(self.layers[d].input.clone(), q)
+
             elif loss_type == "L-DRL":
                 h = self.layers[d - 1].output.detach().clone()
                 q = h + torch.normal(0, std, size=h.shape, device=self.device)
