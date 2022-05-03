@@ -11,6 +11,9 @@ class bp_layer:
         self.weight = torch.empty(out_dim, in_dim, requires_grad=True, device=device)
         nn.init.orthogonal_(self.weight)
 
+        self.fixed_weight = torch.empty(out_dim, in_dim, device=device)
+        nn.init.uniform_(self.fixed_weight, -1e-3, 1e-3)
+
         # functions
         if activation_function == "linear":
             self.activation_function = (lambda x: x)

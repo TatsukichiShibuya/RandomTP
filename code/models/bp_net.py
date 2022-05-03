@@ -83,7 +83,8 @@ class bp_net(net):
             for d in reversed(range(self.depth)):
                 g = g * self.layers[d].activation_derivative(self.layers[d].linear_activation)
                 grad[d] = g.T @ self.layers[d - 1].linear_activation if d >= 1 else g.T @ x
-                g = g @ self.layers[d].weight
+                #g = g @ self.layers[d].weight
+                g = g @ self.layers[d].fixed_weight
         for d in range(self.depth):
             self.layers[d].weight = (self.layers[d].weight - (lr / batch_size)
                                      * grad[d]).detach().requires_grad_()
