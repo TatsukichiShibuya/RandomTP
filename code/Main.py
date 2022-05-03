@@ -160,7 +160,7 @@ def main(**kwargs):
     if kwargs["algorithm"] in BP_LIST:
         model = bp_net(kwargs["depth"], kwargs["in_dim"], kwargs["hid_dim"],
                        kwargs["out_dim"], kwargs["forward_function_2_activation"],
-                       loss_function, device)
+                       loss_function, kwargs["algorithm"], device)
         model.train(train_loader, valid_loader, kwargs["epochs"], kwargs["learning_rate"],
                     kwargs["log"])
     elif kwargs["algorithm"] in TP_LIST:

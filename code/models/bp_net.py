@@ -9,12 +9,13 @@ from torch import nn
 
 
 class bp_net(net):
-    def __init__(self, depth, in_dim, hid_dim, out_dim, activation_function, loss_function, device):
+    def __init__(self, depth, in_dim, hid_dim, out_dim, activation_function, loss_function, algorithm, device):
         self.device = device
         self.depth = depth
         self.layers = self.init_layers(in_dim, hid_dim, out_dim, activation_function)
         self.loss_function = loss_function
         self.MSELoss = nn.MSELoss(reduction="sum")
+        self.algorithm = algorithm
 
     def init_layers(self, in_dim, hid_dim, out_dim, activation_function):
         layers = [None] * self.depth
@@ -83,8 +84,10 @@ class bp_net(net):
             for d in reversed(range(self.depth)):
                 g = g * self.layers[d].activation_derivative(self.layers[d].linear_activation)
                 grad[d] = g.T @ self.layers[d - 1].linear_activation if d >= 1 else g.T @ x
-                #g = g @ self.layers[d].weight
-                g = g @ self.layers[d].fixed_weight
+                if self.algorithm == "BP":
+                    g = g @ self.layers[d].weight
+                elif self.algorithm == "FA":
+                    g = g @ self.layers[d].fixed_weight
         for d in range(self.depth):
             self.layers[d].weight = (self.layers[d].weight - (lr / batch_size)
                                      * grad[d]).detach().requires_grad_()
