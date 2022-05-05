@@ -127,7 +127,8 @@ class tp_net(net):
             with torch.no_grad():
                 train_loss, train_acc = self.test(train_loader)
                 valid_loss, valid_acc = self.test(valid_loader)
-                layerwise_rec_loss = self.layerwise_reconstruction_loss_of_dataset(train_loader)
+                layerwise_rec_loss = self.layerwise_reconstruction_loss_of_dataset(train_loader,
+                                                                                   std, loss_type=params["loss_backward"])
             # log
             if log:
                 log_dict = {}
@@ -260,20 +261,52 @@ class tp_net(net):
             sys.exit(1)
         return rec_loss / len(data_loader.dataset)
 
-    def layerwise_reconstruction_loss(self, x):
+    def layerwise_reconstruction_loss(self, x, std, loss_type):
         layerwise_rec_loss = torch.zeros(self.depth - self.direct_depth, device=self.device)
         self.forward(x)
-        for d in range(1, self.depth - self.direct_depth + 1):
-            plane = self.layers[d].backward_function_1.forward(self.layers[d].output)
-            # diff = self.layers[d].backward_function_2.forward(plane, self.layers[d - 1].output)
-            layerwise_rec_loss[d - 1] = self.MSELoss(self.layers[d - 1].output, plane)
+        for d in reversed(range(1, self.depth - self.direct_depth + 1)):
+            if loss_type == "DTP":
+                q = self.layers[d - 1].output.detach().clone()
+                q = q + torch.normal(0, std, size=q.shape, device=self.device)
+                q_upper = self.layers[d].forward(q)
+                h = self.layers[d].backward_function_1.forward(q_upper)
+                layerwise_rec_loss[d - 1] = self.MSELoss(h, q)
+            elif loss_type == "DRL":
+                h = self.layers[d - 1].output.detach().clone()
+                q = h + torch.normal(0, std, size=h.shape, device=self.device)
+                for _d in range(d, self.depth - self.direct_depth + 1):
+                    q = self.layers[_d].forward(q)
+                for _d in range(d, self.depth - self.direct_depth + 1):
+                    h = self.layers[_d].forward(h)
+                for _d in reversed(range(d, self.depth - self.direct_depth + 1)):
+                    q = self.layers[_d].backward_function_1.forward(q)
+                    q = self.layers[_d].backward_function_2.forward(q, self.layers[_d - 1].output)
+                layerwise_rec_loss[d - 1] = self.MSELoss(self.layers[d].input.clone(), q)
+
+            elif loss_type == "L-DRL":
+                h = self.layers[d - 1].output.detach().clone()
+                q = h + torch.normal(0, std, size=h.shape, device=self.device)
+                q_up = self.layers[d].forward(q)
+                _q_up = self.layers[d].backward_function_1.forward(q_up)
+                q_rec = self.layers[d].backward_function_2.forward(_q_up, h)
+
+                h_up = self.layers[d].forward(h)
+                r_up = h_up + torch.normal(0, std, size=h_up.shape, device=self.device)
+                _r_up = self.layers[d].backward_function_1.forward(r_up)
+                r_rec = self.layers[d].backward_function_2.forward(_r_up, h)
+
+                layerwise_rec_loss[d - 1] = - \
+                    ((q - h) * (q_rec - h)).sum() + self.MSELoss(r_rec, h) / 2
+            else:
+                raise NotImplementedError()
         return layerwise_rec_loss
 
-    def layerwise_reconstruction_loss_of_dataset(self, data_loader):
+    def layerwise_reconstruction_loss_of_dataset(self, data_loader, std, loss_type):
         layerwise_rec_loss = torch.zeros(self.depth - self.direct_depth, device=self.device)
         for x, y in data_loader:
             x, y = x.to(self.device), y.to(self.device)
-            layerwise_rec_loss = layerwise_rec_loss + self.layerwise_reconstruction_loss(x)
+            layerwise_rec_loss = layerwise_rec_loss + \
+                self.layerwise_reconstruction_loss(x, std, loss_type=loss_type)
         if torch.isnan(layerwise_rec_loss).any():
             print("ERROR: rec loss diverged")
             sys.exit(1)
