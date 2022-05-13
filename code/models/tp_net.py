@@ -78,6 +78,7 @@ class tp_net(net):
                     self.update_weights(x, lr)
 
             for x, y in valid_loader:
+                x, y = x.to(self.device), y.to(self.device)
                 with torch.no_grad():
                     self.forward(x)
                     for d in range(1, self.depth - self.direct_depth + 1):
