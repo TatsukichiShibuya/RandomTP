@@ -48,7 +48,7 @@ class parameterized_function(abstract_function):
         super().__init__(in_dim, out_dim, layer, device)
         self.weight = torch.empty(out_dim, in_dim, requires_grad=True, device=device)
         if params["init"] == "uniform":
-            nn.init.uniform_(self.weight, -1e-3, 1e-3)
+            nn.init.uniform_(self.weight, -1e-2, 1e-2)
         elif params["init"] == "gaussian":
             nn.init.normal_(self.weight, 0, 1e-3)
         elif params["init"] == "orthogonal":
