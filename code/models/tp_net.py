@@ -57,7 +57,7 @@ class tp_net(net):
 
         fixed_input = [None] * self.depth
         for d in range(1, self.depth - self.direct_depth + 1):
-            fixed_input[d] = torch.normal(10, 1, (5, self.layers[d].in_dim))
+            fixed_input[d] = torch.normal(10, 1, (5, self.layers[d].in_dim), device=self.device)
 
         # train forward
         for e in range(epochs + 1):
