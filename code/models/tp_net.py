@@ -67,7 +67,7 @@ class tp_net(net):
 
             # forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             # target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
+            # eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
@@ -77,6 +77,7 @@ class tp_net(net):
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
 
+            """
             for x, y in valid_loader:
                 x, y = x.to(self.device), y.to(self.device)
                 with torch.no_grad():
@@ -91,6 +92,7 @@ class tp_net(net):
                         eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
             for d in range(self.depth):
                 eigenvalues_sum[d] /= len(valid_loader)
+            """
 
             """
             with torch.no_grad():
@@ -145,10 +147,9 @@ class tp_net(net):
                     log_dict["forward loss " + str(d)] = forward_loss_sum[d]
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict["target rec loss " + str(d)] = target_rec_sum[d]
-                """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict[f"eigenvalue sum {d}"] = eigenvalues_sum[d].item()
-
+                """
                 wandb.log(log_dict)
             else:
                 print(f"\tTrain Loss       : {train_loss}")
@@ -165,9 +166,9 @@ class tp_net(net):
                     print(f"\tForward Loss-{d}     : {forward_loss_sum[d].item()}")
                 for d in range(1, self.depth - self.direct_depth + 1):
                     print(f"\tTarget Rec Loss-{d}  : {target_rec_sum[d].item()}")
-                """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     print(f"\teigenvalue sum-{d}: {eigenvalues_sum[d].item()}")
+                """
 
     def train_back_weights(self, x, y, lrb, std, loss_type="L-DRL"):
         if not self.back_trainable:
