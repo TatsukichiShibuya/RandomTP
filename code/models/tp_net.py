@@ -82,12 +82,12 @@ class tp_net(net):
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
 
-                with torch.no_grad():
-                    # self.forward(x)
-                    fnum += 1
+            with torch.no_grad():
+                # self.forward(x)
+                for j in range(5):
                     for d in range(1, self.depth - self.direct_depth + 1):
                         #h1 = self.layers[d].input[0]
-                        h1 = fixed_input[d][fnum % 5]
+                        h1 = fixed_input[d][j]
                         gradf = jacobian(self.layers[d].forward, h1)
                         h2 = self.layers[d].forward(h1)
                         gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
