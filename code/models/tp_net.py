@@ -28,7 +28,6 @@ class tp_net(net):
         dims = [in_dim] + [hid_dim] * (self.depth - 1) + [out_dim]
         for d in range(self.depth - 1):
             layers[d] = tp_layer(dims[d], dims[d + 1], self.device, params)
-            # print(d, torch.linalg.matrix_rank(layers[d].backward_function_1.weight))
         params_last = deepcopy(params)
         params_last["ff2"]["act"] = params["last"]
         layers[-1] = tp_layer(dims[-2], dims[-1], self.device, params_last)
@@ -56,11 +55,9 @@ class tp_net(net):
         rec_loss = self.reconstruction_loss_of_dataset(train_loader)
         print(f"> {rec_loss}")
 
-        """
         fixed_input = [None] * self.depth
         for d in range(1, self.depth - self.direct_depth + 1):
             fixed_input[d] = torch.normal(10, 1, (5, self.layers[d].in_dim))
-        """
 
         # train forward
         for e in range(epochs + 1):
@@ -83,18 +80,22 @@ class tp_net(net):
                         self.train_back_weights(x, y, lrb, std, loss_type=params["loss_backward"])
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
-                    """
-                with torch.no_grad():
-                    self.forward(x)
-                    for d in range(1, self.depth - self.direct_depth + 1):
-                        h1 = self.layers[d].input[0]
-                        gradf = jacobian(self.layers[d].forward, h1)
-                        h2 = self.layers[d].forward(h1)
-                        gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
-                        eig, _ = torch.linalg.eig(gradf @ gradg)
-                        #eigenvalues_sum[d] += torch.trace(gradf @ gradg)
-                        #eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
 
+                if e == 15:
+                    with torch.no_grad():
+                        self.forward(x)
+                        for d in range(1, self.depth - self.direct_depth + 1):
+                            #h1 = self.layers[d].input[0]
+                            h1 = fixed_input[d][0]
+                            gradf = jacobian(self.layers[d].forward, h1)
+                            h2 = self.layers[d].forward(h1)
+                            gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
+                            eig, _ = torch.linalg.eig(gradf @ gradg)
+                            import pdb
+                            pdb.set_trace()
+                            #eigenvalues_sum[d] += torch.trace(gradf @ gradg)
+                            #eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
+            """
             for d in range(self.depth):
                 eigenvalues_sum[d] /= len(train_loader)
             print(torch.norm(gradf.T - gradg))
