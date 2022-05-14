@@ -67,7 +67,7 @@ class tp_net(net):
 
             # forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             # target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            # eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
+            eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
@@ -77,9 +77,6 @@ class tp_net(net):
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
 
-            """
-            for x, y in valid_loader:
-                x, y = x.to(self.device), y.to(self.device)
                 with torch.no_grad():
                     self.forward(x)
                     for d in range(1, self.depth - self.direct_depth + 1):
@@ -88,11 +85,10 @@ class tp_net(net):
                         h2 = self.layers[d].forward(h1)
                         gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
                         eig, _ = torch.linalg.eig(gradf @ gradg)
-                        #eigenvalues_sum[d] += torch.trace(gradf @ gradg)
-                        eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
+                        eigenvalues_sum[d] += torch.trace(gradf @ gradg)
+                        #eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
             for d in range(self.depth):
                 eigenvalues_sum[d] /= len(valid_loader)
-            """
 
             """
             with torch.no_grad():
