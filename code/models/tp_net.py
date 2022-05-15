@@ -67,7 +67,7 @@ class tp_net(net):
 
             # forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             # target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
+            # eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
 
             for x, y in train_loader:
                 x, y = x.to(self.device), y.to(self.device)
@@ -77,6 +77,7 @@ class tp_net(net):
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
 
+            """
                 with torch.no_grad():
                     self.forward(x)
                     for d in range(1, self.depth - self.direct_depth + 1):
@@ -86,9 +87,10 @@ class tp_net(net):
                         gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
                         eig, _ = torch.linalg.eig(gradf @ gradg)
                         eigenvalues_sum[d] += torch.trace(gradf @ gradg)
-                        #eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
+                        eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
             for d in range(self.depth):
                 eigenvalues_sum[d] /= len(valid_loader)
+            """
 
             """
             with torch.no_grad():
@@ -135,10 +137,9 @@ class tp_net(net):
                 if valid_acc is not None:
                     log_dict["valid accuracy"] = valid_acc
                 log_dict["time"] = end_time - start_time
-
+                """
                 for d in range(len(layerwise_rec_loss)):
                     log_dict["rec loss " + str(d + 1)] = layerwise_rec_loss[d]
-                """
                 for d in range(self.depth):
                     log_dict["forward loss " + str(d)] = forward_loss_sum[d]
                 for d in range(1, self.depth - self.direct_depth + 1):
