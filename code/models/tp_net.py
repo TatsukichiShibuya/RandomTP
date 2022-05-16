@@ -60,7 +60,7 @@ class tp_net(net):
             print(f"Epoch {e}")
             torch.cuda.empty_cache()
             start_time = time.time()
-            if e > 0:
+            if e > 0 and params["epochs_backward"] > 0:
                 for x, y in train_loader:
                     x, y = x.to(self.device), y.to(self.device)
                     self.train_back_weights(x, y, lrb, std, loss_type=params["loss_backward"])
@@ -69,13 +69,14 @@ class tp_net(net):
             # target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             # eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
 
-            for x, y in train_loader:
-                x, y = x.to(self.device), y.to(self.device)
-                if e > 0:
-                    for i in range(params["epochs_backward"]):
-                        self.train_back_weights(x, y, lrb, std, loss_type=params["loss_backward"])
-                    self.compute_target(x, y, stepsize)
-                    self.update_weights(x, lr)
+            if e > 0:
+                for x, y in train_loader:
+                    x, y = x.to(self.device), y.to(self.device)
+                       for i in range(params["epochs_backward"]):
+                            self.train_back_weights(
+                                x, y, lrb, std, loss_type=params["loss_backward"])
+                        self.compute_target(x, y, stepsize)
+                        self.update_weights(x, lr)
 
             """
                 with torch.no_grad():
