@@ -87,7 +87,7 @@ class tp_net(net):
                             h2 = self.layers[d].forward(h1)
                             gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
                             eig, _ = torch.linalg.eig(gradf @ gradg)
-                            eigenvalues_sum[d] += torch.trace(gradf @ gradg)
+                            #eigenvalues_sum[d] += torch.trace(gradf @ gradg)
                             eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
             for d in range(self.depth):
                 eigenvalues_sum[d] /= len(valid_loader)
