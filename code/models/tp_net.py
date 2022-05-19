@@ -90,7 +90,7 @@ class tp_net(net):
                             #eigenvalues_sum[d] += torch.trace(gradf @ gradg)
                             eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
             for d in range(self.depth):
-                eigenvalues_sum[d] /= len(valid_loader)
+                eigenvalues_sum[d] /= len(train_loader)
 
             """
             with torch.no_grad():
