@@ -78,7 +78,7 @@ class tp_net(net):
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
 
-                if e == epochs:
+                if e == epochs or e == 0:
                     with torch.no_grad():
                         self.forward(x)
                         for d in range(1, self.depth - self.direct_depth + 1):
