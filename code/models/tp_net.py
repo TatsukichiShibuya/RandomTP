@@ -72,7 +72,7 @@ class tp_net(net):
             if e > 0:
                 for x, y in train_loader:
                     x, y = x.to(self.device), y.to(self.device)
-                   for i in range(params["epochs_backward"]):
+                    for i in range(params["epochs_backward"]):
                         self.train_back_weights(
                             x, y, lrb, std, loss_type=params["loss_backward"])
                     self.compute_target(x, y, stepsize)
