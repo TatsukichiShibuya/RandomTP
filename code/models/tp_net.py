@@ -79,18 +79,20 @@ class tp_net(net):
                     self.update_weights(x, lr)
 
             if e == epochs or e == 0:
-                with torch.no_grad():
-                    self.forward(x)
-                    for d in range(1, self.depth - self.direct_depth + 1):
-                        h1 = self.layers[d].input[0]
-                        gradf = jacobian(self.layers[d].forward, h1)
-                        h2 = self.layers[d].forward(h1)
-                        gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
-                        eig, _ = torch.linalg.eig(gradf @ gradg)
-                        #eigenvalues_sum[d] += torch.trace(gradf @ gradg)
-                        eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
-            for d in range(self.depth):
-                eigenvalues_sum[d] /= len(train_loader)
+                for x, y in train_loader:
+                    x, y = x.to(self.device), y.to(self.device)
+                    with torch.no_grad():
+                        self.forward(x)
+                        for d in range(1, self.depth - self.direct_depth + 1):
+                            h1 = self.layers[d].input[0]
+                            gradf = jacobian(self.layers[d].forward, h1)
+                            h2 = self.layers[d].forward(h1)
+                            gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
+                            eig, _ = torch.linalg.eig(gradf @ gradg)
+                            #eigenvalues_sum[d] += torch.trace(gradf @ gradg)
+                            eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
+                for d in range(self.depth):
+                    eigenvalues_sum[d] /= len(train_loader)
 
             """
             with torch.no_grad():
