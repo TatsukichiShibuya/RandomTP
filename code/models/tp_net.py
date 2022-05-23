@@ -76,6 +76,7 @@ class tp_net(net):
 
             eigenvalues_ratio = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             eigenvalues_trace = [torch.zeros(1, device=self.device) for d in range(self.depth)]
+            jacobian_inverse = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             if e == epochs:
                 for x, y in valid_loader:
                     x, y = x.to(self.device), y.to(self.device)
@@ -89,9 +90,12 @@ class tp_net(net):
                             eig, _ = torch.linalg.eig(gradf @ gradg)
                             eigenvalues_ratio[d] += (eig.real > 0).sum() / len(eig.real)
                             eigenvalues_trace[d] += torch.trace(gradf @ gradg)
+                            jacobian_inverse[d] += torch.norm(gradf @
+                                                              gradg - torch.eye(gradf.shape[0]))
                 for d in range(self.depth):
                     eigenvalues_ratio[d] /= len(valid_loader)
                     eigenvalues_trace[d] /= len(valid_loader)
+                    jacobian_inverse[d] /= len(valid_loader)
 
             """
             with torch.no_grad():
@@ -149,6 +153,7 @@ class tp_net(net):
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict[f"eigenvalue ratio {d}"] = eigenvalues_ratio[d].item()
                     log_dict[f"eigenvalue trace {d}"] = eigenvalues_trace[d].item()
+                    log_dict[f"jacobian inverse {d}"] = jacobian_inverse[d].item()
 
                 wandb.log(log_dict)
             else:
