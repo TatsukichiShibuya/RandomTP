@@ -74,10 +74,10 @@ class tp_net(net):
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
 
-            """
-            eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            if e == epochs or e == 0:
-                for x, y in valid_loader[:10]:
+            eigenvalues_ratio = [torch.zeros(1, device=self.device) for d in range(self.depth)]
+            eigenvalues_trace = [torch.zeros(1, device=self.device) for d in range(self.depth)]
+            if e == epochs:
+                for x, y in valid_loader[:100]:
                     x, y = x.to(self.device), y.to(self.device)
                     with torch.no_grad():
                         self.forward(x)
@@ -87,11 +87,11 @@ class tp_net(net):
                             h2 = self.layers[d].forward(h1)
                             gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
                             eig, _ = torch.linalg.eig(gradf @ gradg)
-                            #eigenvalues_sum[d] += torch.trace(gradf @ gradg)
-                            eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
+                            eigenvalues_ratio[d] += (eig.real > 0).sum() / len(eig.real)
+                            eigenvalues_trace[d] += torch.trace(gradf @ gradg)
                 for d in range(self.depth):
-                    eigenvalues_sum[d] /= len(valid_loader[:10])
-            """
+                    eigenvalues_ratio[d] /= len(valid_loader[:100])
+                    eigenvalues_trace[d] /= len(valid_loader[:100])
 
             """
             with torch.no_grad():
@@ -145,9 +145,10 @@ class tp_net(net):
                     log_dict["forward loss " + str(d)] = forward_loss_sum[d]
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict["target rec loss " + str(d)] = target_rec_sum[d]
-                for d in range(1, self.depth - self.direct_depth + 1):
-                    log_dict[f"eigenvalue sum {d}"] = eigenvalues_sum[d].item()
                 """
+                for d in range(1, self.depth - self.direct_depth + 1):
+                    log_dict[f"eigenvalue ratio {d}"] = eigenvalues_ratio[d].item()
+                    log_dict[f"eigenvalue trace {d}"] = eigenvalues_trace[d].item()
 
                 wandb.log(log_dict)
             else:
