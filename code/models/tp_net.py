@@ -60,16 +60,12 @@ class tp_net(net):
             print(f"Epoch {e}")
             torch.cuda.empty_cache()
             start_time = time.time()
-            if e > 0 and params["epochs_backward"] > 0:
-                for x, y in train_loader:
-                    x, y = x.to(self.device), y.to(self.device)
-                    self.train_back_weights(x, y, lrb, std, loss_type=params["loss_backward"])
-
-            # forward_loss_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            # target_rec_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-
             if e > 0:
+                if params["epochs_backward"] > 0:
+                    for x, y in train_loader:
+                        x, y = x.to(self.device), y.to(self.device)
+                        self.train_back_weights(x, y, lrb, std, loss_type=params["loss_backward"])
+
                 for x, y in train_loader:
                     x, y = x.to(self.device), y.to(self.device)
                     for i in range(params["epochs_backward"]):
@@ -78,8 +74,10 @@ class tp_net(net):
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
 
+            """
+            eigenvalues_sum = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             if e == epochs or e == 0:
-                for x, y in train_loader:
+                for x, y in valid_loader[:10]:
                     x, y = x.to(self.device), y.to(self.device)
                     with torch.no_grad():
                         self.forward(x)
@@ -92,7 +90,8 @@ class tp_net(net):
                             #eigenvalues_sum[d] += torch.trace(gradf @ gradg)
                             eigenvalues_sum[d] += (eig.real > 0).sum() / len(eig.real)
                 for d in range(self.depth):
-                    eigenvalues_sum[d] /= len(train_loader)
+                    eigenvalues_sum[d] /= len(valid_loader[:10])
+            """
 
             """
             with torch.no_grad():
@@ -127,8 +126,7 @@ class tp_net(net):
             with torch.no_grad():
                 train_loss, train_acc = self.test(train_loader)
                 valid_loss, valid_acc = self.test(valid_loader)
-                layerwise_rec_loss = self.layerwise_reconstruction_loss_of_dataset(train_loader,
-                                                                                   std, loss_type=params["loss_backward"])
+                #layerwise_rec_loss = self.layerwise_reconstruction_loss_of_dataset(train_loader, std, loss_type=params["loss_backward"])
             # log
             if log:
                 log_dict = {}
@@ -140,16 +138,16 @@ class tp_net(net):
                     log_dict["valid accuracy"] = valid_acc
                 log_dict["time"] = end_time - start_time
 
+                """
                 for d in range(len(layerwise_rec_loss)):
                     log_dict["rec loss " + str(d + 1)] = layerwise_rec_loss[d]
-                """
                 for d in range(self.depth):
                     log_dict["forward loss " + str(d)] = forward_loss_sum[d]
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict["target rec loss " + str(d)] = target_rec_sum[d]
-                """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict[f"eigenvalue sum {d}"] = eigenvalues_sum[d].item()
+                """
 
                 wandb.log(log_dict)
             else:
@@ -159,10 +157,10 @@ class tp_net(net):
                     print(f"\tTrain Acc        : {train_acc}")
                 if valid_acc is not None:
                     print(f"\tValid Acc        : {valid_acc}")
-                # print(f"\tRec Loss         : {rec_loss}")
+                """
                 for d in range(len(layerwise_rec_loss)):
                     print(f"\tRec Loss-{d+1}       : {layerwise_rec_loss[d]}")
-                """
+
                 for d in range(self.depth):
                     print(f"\tForward Loss-{d}     : {forward_loss_sum[d].item()}")
                 for d in range(1, self.depth - self.direct_depth + 1):
