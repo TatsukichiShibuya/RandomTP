@@ -77,7 +77,7 @@ class tp_net(net):
             eigenvalues_ratio = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             eigenvalues_trace = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             if e == epochs:
-                for x, y in valid_loader[:100]:
+                for x, y in valid_loader:
                     x, y = x.to(self.device), y.to(self.device)
                     with torch.no_grad():
                         self.forward(x)
@@ -90,8 +90,8 @@ class tp_net(net):
                             eigenvalues_ratio[d] += (eig.real > 0).sum() / len(eig.real)
                             eigenvalues_trace[d] += torch.trace(gradf @ gradg)
                 for d in range(self.depth):
-                    eigenvalues_ratio[d] /= len(valid_loader[:100])
-                    eigenvalues_trace[d] /= len(valid_loader[:100])
+                    eigenvalues_ratio[d] /= len(valid_loader)
+                    eigenvalues_trace[d] /= len(valid_loader)
 
             """
             with torch.no_grad():
