@@ -67,31 +67,30 @@ class tp_net(net):
                         self.train_back_weights(x, y, lrb, std, loss_type=params["loss_backward"])
                     self.compute_target(x, y, stepsize)
                     self.update_weights(x, lr)
-            """
+
             eigenvalues_ratio = [torch.zeros(1, device=self.device) for d in range(self.depth)]
             eigenvalues_trace = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            jacobian_inverse = [torch.zeros(1, device=self.device) for d in range(self.depth)]
-            if e == epochs:
-                for x, y in valid_loader:
-                    x, y = x.to(self.device), y.to(self.device)
-                    with torch.no_grad():
-                        self.forward(x)
-                        for d in range(1, self.depth - self.direct_depth + 1):
-                            h1 = self.layers[d].input[0]
-                            gradf = jacobian(self.layers[d].forward, h1)
-                            h2 = self.layers[d].forward(h1)
-                            gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
-                            eig, _ = torch.linalg.eig(gradf @ gradg)
-                            eigenvalues_ratio[d] += (eig.real > 0).sum() / len(eig.real)
-                            eigenvalues_trace[d] += torch.trace(gradf @ gradg)
-                            jacobian_inverse[d] += torch.norm(gradf @
-                                                              gradg - torch.eye(gradf.shape[0]), device=self.device)
-                for d in range(self.depth):
-                    eigenvalues_ratio[d] /= len(valid_loader)
-                    eigenvalues_trace[d] /= len(valid_loader)
-                    jacobian_inverse[d] /= len(valid_loader)
+            # jacobian_inverse = [torch.zeros(1, device=self.device) for d in range(self.depth)]
 
+            for x, y in valid_loader:
+                x, y = x.to(self.device), y.to(self.device)
+                with torch.no_grad():
+                    self.forward(x)
+                    for d in range(1, self.depth - self.direct_depth + 1):
+                        h1 = self.layers[d].input[0]
+                        gradf = jacobian(self.layers[d].forward, h1)
+                        h2 = self.layers[d].forward(h1)
+                        gradg = jacobian(self.layers[d].backward_function_1.forward, h2)
+                        eig, _ = torch.linalg.eig(gradf @ gradg)
+                        eigenvalues_ratio[d] += (eig.real > 0).sum() / len(eig.real)
+                        eigenvalues_trace[d] += torch.trace(gradf @ gradg)
+                        # jacobian_inverse[d] += torch.norm(gradf @ gradg -torch.eye(gradf.shape[0]), device=self.device)
+            for d in range(self.depth):
+                eigenvalues_ratio[d] /= len(valid_loader)
+                eigenvalues_trace[d] /= len(valid_loader)
+                # jacobian_inverse[d] /= len(valid_loader)
 
+            """
             with torch.no_grad():
                 for d in range(1, self.depth - self.direct_depth + 1):
                     for i in range(5):
@@ -143,12 +142,12 @@ class tp_net(net):
                     log_dict["forward loss " + str(d)] = forward_loss_sum[d]
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict["target rec loss " + str(d)] = target_rec_sum[d]
-
+                """
                 for d in range(1, self.depth - self.direct_depth + 1):
                     log_dict[f"eigenvalue ratio {d}"] = eigenvalues_ratio[d].item()
                     log_dict[f"eigenvalue trace {d}"] = eigenvalues_trace[d].item()
-                    log_dict[f"jacobian inverse {d}"] = jacobian_inverse[d].item()
-                """
+                    #log_dict[f"jacobian inverse {d}"] = jacobian_inverse[d].item()
+
                 wandb.log(log_dict)
             else:
                 print(f"\tTrain Loss       : {train_loss}")
